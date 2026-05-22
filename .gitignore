@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cache & Database
+cache/
+*.db
+
+# Versions (local backups)
+versions/
+
+# Generated content
+generated_posts/
+
+# Claude / Cowork internals
+.claude/
+.mcp.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

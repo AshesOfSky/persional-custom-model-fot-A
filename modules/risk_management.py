@@ -6,6 +6,7 @@ v3 新增：板块差异化入场阈值、市场环境过滤、账户级回撤�
 """
 
 from typing import Optional, Dict
+import numpy as np
 import pandas as pd
 
 
@@ -45,6 +46,19 @@ COOLDOWN_BARS = 20              # 暂停 20 个交易日
 # v3: 个股连亏冷却
 CONSECUTIVE_LOSS_LIMIT = 3      # 连续 3 笔亏损
 CONSECUTIVE_LOSS_COOLDOWN_DAYS = 20
+
+# 板块阈值配置
+def get_board_thresholds(board: str = "主板") -> dict:
+    """返回不同板块的趋势/桶数最低要求阈值。"""
+    presets = {
+        "主板":   {"trend_min": 55, "buckets_min": 3},
+        "创业板": {"trend_min": 50, "buckets_min": 2},
+        "科创板": {"trend_min": 50, "buckets_min": 2},
+        "北交所": {"trend_min": 45, "buckets_min": 2},
+        "ETF":    {"trend_min": 50, "buckets_min": 2},
+    }
+    return presets.get(board, presets["主板"])
+
 
 # 市值修正系数：小盘股给更多空间
 def _cap_adjust(market_cap_yi: Optional[float]) -> float:
@@ -270,3 +284,371 @@ def enhanced_market_filter(df: pd.DataFrame, idx: int,
     result["position_scale"] = round(max(0.0, min(1.0, result["position_scale"])), 2)
 
     return result
+
+
+
+# ======================================================================
+# v4 P2-07: HMM Regime Detector
+# ======================================================================
+
+class HMMRegimeDetector:
+    """
+    Hidden Markov Model for market regime detection.
+    Identifies 3 states: bull (0), neutral (1), bear (2).
+
+    Uses returns + volatility as observable features.
+    Falls back to rule-based detection if hmmlearn not available.
+    """
+
+    def __init__(self, n_states: int = 3, lookback: int = 500):
+        self.n_states = n_states
+        self.lookback = lookback
+        self.model = None
+        self._hmm_available = False
+        try:
+            from hmmlearn.hmm import GaussianHMM
+            self._hmm_available = True
+        except ImportError:
+            pass
+
+    def fit_predict(self, benchmark_df: "pd.DataFrame") -> "Dict":
+        """
+        Fit HMM on benchmark data and return current regime info.
+
+        Returns:
+            {
+                "regime": str,           # "bull" / "neutral" / "bear"
+                "regime_id": int,        # 0, 1, 2
+                "probabilities": list,   # [p_bull, p_neutral, p_bear]
+                "position_scale": float, # 0.0 ~ 1.0
+                "method": str,           # "hmm" or "rule_based"
+            }
+        """
+        if benchmark_df is None or benchmark_df.empty:
+            return self._default_result()
+
+        close_col = "Close" if "Close" in benchmark_df.columns else None
+        if close_col is None:
+            for c in benchmark_df.columns:
+                if "close" in c.lower() or c == "收盘":
+                    close_col = c
+                    break
+        if close_col is None:
+            return self._default_result()
+
+        close = pd.to_numeric(benchmark_df[close_col], errors="coerce").dropna()
+        if len(close) < 60:
+            return self._default_result()
+
+        close = close.tail(self.lookback)
+        returns = close.pct_change().dropna()
+        if len(returns) < 60:
+            return self._default_result()
+
+        if self._hmm_available:
+            return self._hmm_predict(returns)
+        else:
+            return self._rule_based_predict(returns, close)
+
+    def _hmm_predict(self, returns: "pd.Series") -> "Dict":
+        """HMM-based regime detection."""
+        from hmmlearn.hmm import GaussianHMM
+        import warnings
+
+        ret_arr = returns.values
+        vol_20 = pd.Series(ret_arr).rolling(20).std().fillna(0.01).values
+
+        X = np.column_stack([ret_arr, vol_20])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model = GaussianHMM(
+                n_components=self.n_states,
+                covariance_type="full",
+                n_iter=200,
+                random_state=42,
+            )
+            try:
+                model.fit(X)
+            except Exception:
+                return self._rule_based_predict(returns,
+                    pd.Series(dtype=float))
+
+        states = model.predict(X)
+        proba = model.predict_proba(X)
+
+        # Identify which state is bull/neutral/bear by mean return
+        state_means = {}
+        for s in range(self.n_states):
+            mask = states == s
+            if mask.sum() > 0:
+                state_means[s] = float(np.mean(ret_arr[mask]))
+            else:
+                state_means[s] = 0.0
+
+        sorted_states = sorted(state_means.keys(), key=lambda k: state_means[k])
+        bear_id = sorted_states[0]
+        neutral_id = sorted_states[1] if len(sorted_states) > 1 else sorted_states[0]
+        bull_id = sorted_states[-1]
+
+        current_state = int(states[-1])
+        current_proba = proba[-1].tolist()
+
+        if current_state == bull_id:
+            regime = "bull"
+            pos_scale = 1.0
+        elif current_state == bear_id:
+            regime = "bear"
+            pos_scale = 0.3
+        else:
+            regime = "neutral"
+            pos_scale = 0.6
+
+        # Refine by probability
+        p_bear = float(current_proba[bear_id])
+        if p_bear > 0.6:
+            pos_scale = min(pos_scale, 0.3)
+        elif p_bear > 0.4:
+            pos_scale = min(pos_scale, 0.5)
+
+        return {
+            "regime": regime,
+            "regime_id": current_state,
+            "probabilities": [round(p, 3) for p in current_proba],
+            "position_scale": round(pos_scale, 2),
+            "method": "hmm",
+        }
+
+    def _rule_based_predict(self, returns: "pd.Series",
+                            close: "pd.Series") -> "Dict":
+        """Fallback rule-based regime detection."""
+        ret_arr = returns.values
+        mean_20 = float(np.mean(ret_arr[-20:])) if len(ret_arr) >= 20 else 0
+        mean_60 = float(np.mean(ret_arr[-60:])) if len(ret_arr) >= 60 else 0
+        vol_20 = float(np.std(ret_arr[-20:])) if len(ret_arr) >= 20 else 0.01
+        vol_60 = float(np.std(ret_arr[-60:])) if len(ret_arr) >= 60 else 0.01
+
+        if mean_20 > 0.001 and mean_60 > 0:
+            regime = "bull"
+            pos_scale = 1.0
+        elif mean_20 < -0.001 and mean_60 < 0:
+            regime = "bear"
+            pos_scale = 0.3
+        else:
+            regime = "neutral"
+            pos_scale = 0.6
+
+        # High volatility penalty
+        if vol_20 > vol_60 * 1.5:
+            pos_scale *= 0.7
+
+        return {
+            "regime": regime,
+            "regime_id": {"bull": 0, "neutral": 1, "bear": 2}[regime],
+            "probabilities": [0.33, 0.34, 0.33],
+            "position_scale": round(max(0.0, min(1.0, pos_scale)), 2),
+            "method": "rule_based",
+        }
+
+    def _default_result(self) -> "Dict":
+        return {
+            "regime": "neutral",
+            "regime_id": 1,
+            "probabilities": [0.33, 0.34, 0.33],
+            "position_scale": 0.6,
+            "method": "default",
+        }
+
+
+# ======================================================================
+# v4 P2-08: Volatility-adaptive position scaling
+# ======================================================================
+
+def volatility_adaptive_scale(df: "pd.DataFrame", idx: int,
+                              hmm_result: "Dict" = None,
+                              atr_percentile_window: int = 120) -> float:
+    """
+    Combine ATR percentile rank + HMM regime probability into a
+    single position scale factor in [0.0, 1.0].
+    """
+    scale = 1.0
+
+    # ATR percentile-based scaling
+    if "ATR" in df.columns and idx >= atr_percentile_window:
+        atr_history = df["ATR"].values[max(0, idx - atr_percentile_window):idx + 1]
+        atr_now = float(atr_history[-1])
+        percentile = float(np.sum(atr_history <= atr_now) / len(atr_history))
+        if percentile > 0.9:
+            scale *= 0.4   # extreme vol -> heavy cut
+        elif percentile > 0.75:
+            scale *= 0.6
+        elif percentile > 0.5:
+            scale *= 0.8
+        # Low vol: keep full size
+
+    # HMM regime overlay
+    if hmm_result:
+        hmm_scale = hmm_result.get("position_scale", 1.0)
+        scale *= hmm_scale
+
+    return round(max(0.0, min(1.0, scale)), 2)
+
+
+# ======================================================================
+# v4 P2-09: Portfolio correlation constraint
+# ======================================================================
+
+def portfolio_correlation_check(
+    candidate_returns: "pd.Series",
+    holding_returns_list: "list",
+    max_corr: float = 0.7,
+    max_same_industry_pct: float = 0.30,
+    candidate_industry: str = "",
+    holding_industries: "list" = None,
+) -> "Dict":
+    """
+    Check if adding candidate stock violates correlation / concentration limits.
+
+    Args:
+        candidate_returns: daily return series of candidate stock
+        holding_returns_list: list of daily return series of current holdings
+        max_corr: max pairwise correlation allowed
+        max_same_industry_pct: max % of holdings in same industry
+        candidate_industry: industry of candidate
+        holding_industries: list of industries of current holdings
+
+    Returns:
+        {"allow": bool, "reason": str, "max_correlation": float}
+    """
+    if not holding_returns_list:
+        return {"allow": True, "reason": "empty portfolio", "max_correlation": 0.0}
+
+    # Correlation check
+    max_found_corr = 0.0
+    for h_ret in holding_returns_list:
+        min_len = min(len(candidate_returns), len(h_ret))
+        if min_len < 20:
+            continue
+        c = candidate_returns.iloc[-min_len:]
+        h = h_ret.iloc[-min_len:]
+        corr = float(c.corr(h))
+        if not np.isnan(corr):
+            max_found_corr = max(max_found_corr, abs(corr))
+
+    if max_found_corr > max_corr:
+        return {
+            "allow": False,
+            "reason": f"correlation {max_found_corr:.2f} > {max_corr}",
+            "max_correlation": round(max_found_corr, 3),
+        }
+
+    # Industry concentration check
+    if candidate_industry and holding_industries:
+        same_count = sum(1 for ind in holding_industries if ind == candidate_industry)
+        total = len(holding_industries) + 1
+        if total > 0 and (same_count + 1) / total > max_same_industry_pct:
+            return {
+                "allow": False,
+                "reason": f"industry {candidate_industry} over {max_same_industry_pct*100:.0f}%",
+                "max_correlation": round(max_found_corr, 3),
+            }
+
+    return {
+        "allow": True,
+        "reason": "passed",
+        "max_correlation": round(max_found_corr, 3),
+    }
+
+
+# =========================================================================
+# v5 P2-09: CVaR Portfolio Optimizer
+# =========================================================================
+
+def compute_cvar(returns: np.ndarray, confidence: float = 0.95) -> float:
+    """Compute Conditional Value-at-Risk (Expected Shortfall)."""
+    if len(returns) < 10:
+        return 0.0
+    sorted_ret = np.sort(returns)
+    cutoff_idx = int(len(sorted_ret) * (1 - confidence))
+    cutoff_idx = max(cutoff_idx, 1)
+    tail = sorted_ret[:cutoff_idx]
+    return float(-np.mean(tail))
+
+
+def cvar_portfolio_optimize(
+    returns_matrix: np.ndarray,
+    target_cvar: float = 0.05,
+    confidence: float = 0.95,
+    max_weight: float = 0.15,
+    min_weight: float = 0.0,
+    n_iterations: int = 1000,
+) -> Dict[str, object]:
+    """
+    CVaR-constrained portfolio optimization via Monte Carlo sampling.
+
+    Args:
+        returns_matrix: (n_days, n_assets) daily returns
+        target_cvar: maximum acceptable CVaR
+        confidence: CVaR confidence level
+        max_weight: per-asset weight cap
+        min_weight: per-asset minimum weight
+        n_iterations: number of random portfolios to sample
+
+    Returns dict with: weights, cvar, expected_return, sharpe
+    """
+    n_days, n_assets = returns_matrix.shape
+    if n_days < 30 or n_assets < 2:
+        # Equal weight fallback
+        w = np.ones(n_assets) / n_assets
+        port_ret = returns_matrix @ w
+        return {
+            "weights": w.tolist(),
+            "cvar": compute_cvar(port_ret, confidence),
+            "expected_return": float(np.mean(port_ret) * 252),
+            "sharpe": float(np.mean(port_ret) / (np.std(port_ret) + 1e-12) * np.sqrt(252)),
+            "method": "equal_weight",
+        }
+
+    rng = np.random.RandomState(42)
+    best_sharpe = -np.inf
+    best_result = None
+
+    for _ in range(n_iterations):
+        # Random weights
+        w = rng.dirichlet(np.ones(n_assets))
+        w = np.clip(w, min_weight, max_weight)
+        w /= w.sum()
+
+        port_ret = returns_matrix @ w
+        cvar = compute_cvar(port_ret, confidence)
+
+        if cvar > target_cvar:
+            continue  # violates CVaR constraint
+
+        mean_ret = np.mean(port_ret)
+        std_ret = np.std(port_ret)
+        sharpe = mean_ret / (std_ret + 1e-12) * np.sqrt(252)
+
+        if sharpe > best_sharpe:
+            best_sharpe = sharpe
+            best_result = {
+                "weights": np.round(w, 4).tolist(),
+                "cvar": round(cvar, 4),
+                "expected_return": round(float(mean_ret * 252), 4),
+                "sharpe": round(float(sharpe), 3),
+                "method": "cvar_mc",
+            }
+
+    if best_result is None:
+        # All portfolios violated CVaR; return minimum-CVaR portfolio
+        w = np.ones(n_assets) / n_assets
+        port_ret = returns_matrix @ w
+        best_result = {
+            "weights": np.round(w, 4).tolist(),
+            "cvar": round(compute_cvar(port_ret, confidence), 4),
+            "expected_return": round(float(np.mean(port_ret) * 252), 4),
+            "sharpe": round(float(np.mean(port_ret) / (np.std(port_ret) + 1e-12) * np.sqrt(252)), 3),
+            "method": "equal_weight_fallback",
+        }
+
+    return best_result

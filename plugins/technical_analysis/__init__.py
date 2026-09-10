@@ -1,1 +1,0 @@
-"""technical_analysis plugin"""

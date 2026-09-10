@@ -29,12 +29,18 @@ def _score_trend(analysis: Dict, df: pd.DataFrame) -> float:
     """趋势维度评分 0-100"""
     score = 50.0
 
-    # EMA 多头排列
-    trend_str = analysis.get("trend_strength", 0)
+    # Canonical trend score. The former key (`trend_strength`) did not match
+    # analysis.run_full_analysis (`trend_strength_score`), so this dimension
+    # silently stayed at 50. When the canonical score exists it already
+    # includes ADX and multi-timeframe evidence; do not count them twice.
+    trend_str = analysis.get(
+        "trend_strength_score", analysis.get("trend_strength")
+    )
     if isinstance(trend_str, (int, float)):
-        score = max(score, min(100.0, float(trend_str)))
+        return max(0.0, min(100.0, float(trend_str)))
 
-    # ADX 趋势强度
+    # Legacy-only fallback for older analysis payloads without a canonical
+    # trend score.
     if "ADX" in df.columns:
         adx = float(df["ADX"].iloc[-1])
         if adx > 30:
@@ -96,9 +102,10 @@ def _score_volume(analysis: Dict, df: pd.DataFrame) -> float:
     """量能维度评分 0-100"""
     score = 50.0
 
-    if "Volume" in df.columns and "Vol_MA5" in df.columns:
+    volume_ma5_column = "Vol_MA_5" if "Vol_MA_5" in df.columns else "Vol_MA5"
+    if "Volume" in df.columns and volume_ma5_column in df.columns:
         vol = float(df["Volume"].iloc[-1])
-        vol_ma5 = float(df["Vol_MA5"].iloc[-1])
+        vol_ma5 = float(df[volume_ma5_column].iloc[-1])
         if vol_ma5 > 0:
             ratio = vol / vol_ma5
             if ratio > 2.0:
@@ -178,6 +185,15 @@ def _score_signal(comp_signals: Dict) -> float:
     latest = buy_signals[-1]
     n_buckets = len(latest.get("buckets", []))
     confidence = latest.get("confidence", 0)
+    components = latest.get("confidence_components")
+    if (
+        isinstance(components, dict)
+        and components.get("semantics")
+        == "signal_evidence_score_not_probability"
+    ):
+        if comp_signals.get("current_signal") != "买入":
+            return 20
+        return max(0, min(100, float(confidence)))
     return min(100, confidence + n_buckets * 5)
 
 
@@ -556,31 +572,34 @@ def generate_buy_action_plan(
     suggestion: Dict,
     board: str = "其他",
     market_cap_yi: Optional[float] = None,
+    current_price: Optional[float] = None,
 ) -> Optional[Dict]:
     """
     完整买入操作计划生成器。
 
-    仅当当前信号为「买入」时生成计划，否则返回 None。
+    常态化：无论当前建议是否为「买入」都生成计划（含买入置信度），
+    由调用方据 confidence 判断是否适合买入；不再在非买入时返回 None。
 
     返回:
         {
             "buy_score": Dict,      # 综合买入评分
             "targets": Dict,        # 止盈止损价位
             "daily_plan": List,     # T+0 ~ T+5 逐日计划
+            "confidence": Dict,     # 买入置信度结论（score/grade/suitable/label/color）
             "summary": str,         # 一句话摘要
         }
     """
-    if suggestion.get("action") != "买入":
-        return None
-
     if df is None or df.empty:
         return None
 
     # 1. 综合买入评分
     buy_score = compute_buy_score(analysis, df, sr_levels, comp_signals, suggestion)
 
-    # 2. 止盈止损价位
-    current_price = float(df["Close"].iloc[-1])
+    # 2. 止盈止损价位（优先用实时现价 → 与看板“最新价”一致；否则退回最后日线收盘）
+    if not (current_price and current_price > 0):
+        current_price = float(df["Close"].iloc[-1])
+    else:
+        current_price = float(current_price)
     targets = compute_price_targets(
         current_price, df, sr_levels,
         board=board, market_cap_yi=market_cap_yi,
@@ -601,9 +620,167 @@ def generate_buy_action_plan(
         f"风险收益比 1:{rr:.1f}"
     )
 
+    # 5. 买入置信度结论（据综合评分判定是否适合买入）
+    _g = buy_score["grade"]
+    if _g in ("A", "B"):
+        _suit, _color = "适合买入", "#26A69A"
+    elif _g == "C":
+        _suit, _color = "谨慎/轻仓试探", "#FF9800"
+    else:
+        _suit, _color = "不适合买入", "#EF5350"
+    confidence = {
+        "score": buy_score["total_score"],   # 0~100 买入置信度
+        "grade": _g,
+        "suitable": _g in ("A", "B"),
+        "label": _suit,
+        "color": _color,
+    }
+
     return {
         "buy_score": buy_score,
         "targets": targets,
         "daily_plan": daily_plan,
+        "confidence": confidence,
         "summary": summary,
+    }
+
+
+# ── 持仓复盘 / 诊断 ──────────────────────────────────────────────────────
+
+def review_position(
+    buy_price: float,
+    buy_date,
+    df: pd.DataFrame,
+    targets: Dict,
+    buy_time=None,
+    analysis: Optional[Dict] = None,
+) -> Dict:
+    """录入实际买入价/日期，对比当前行情，给出操作评价与后续建议。
+
+    参数：
+        buy_price : 实际买入价
+        buy_date  : 买入日期（date 或 'YYYY-MM-DD'）
+        df        : 含 OHLCV 的指标 DataFrame（DatetimeIndex，截至最新）
+        targets   : compute_price_targets 输出（止损/TP1-3/entry_price）
+        buy_time  : 买入时间（仅记录，可选）
+        analysis  : 分析结果（可选，用于趋势判断）
+
+    返回：{valid, current_price, pnl_pct, days_held, cal_days, max_gain, max_dd,
+           zone, touched_stop, reached_tp1/2/3, evaluation[], advice, advice_action, advice_color}
+    """
+    out = {"valid": False}
+    if df is None or df.empty or not buy_price or buy_price <= 0:
+        return out
+
+    current = float(df["Close"].iloc[-1])
+    pnl_pct = (current - buy_price) / buy_price * 100.0
+
+    # 买入后价格路径
+    try:
+        bd = pd.to_datetime(buy_date)
+    except Exception:
+        bd = df.index[-1]
+    since = df[df.index >= bd]
+    if since.empty:
+        since = df.tail(1)
+    days_held = max(0, len(since) - 1)                       # 已观察交易日(不含买入当日)
+    cal_days = max(0, (df.index[-1] - bd).days)
+    hi = float(since["High"].max()) if "High" in since else current
+    lo = float(since["Low"].min()) if "Low" in since else current
+    max_gain = (hi - buy_price) / buy_price * 100.0
+    max_dd = (lo - buy_price) / buy_price * 100.0
+
+    sl = float(targets.get("stop_loss", buy_price * 0.92))
+    tp1 = float(targets.get("take_profit_1", buy_price * 1.05))
+    tp2 = float(targets.get("take_profit_2", buy_price * 1.10))
+    tp3 = float(targets.get("take_profit_3", buy_price * 1.20))
+    plan_entry = float(targets.get("entry_price", buy_price))
+
+    touched_stop = lo <= sl
+    reached_tp1, reached_tp2, reached_tp3 = hi >= tp1, hi >= tp2, hi >= tp3
+
+    if current <= sl:
+        zone = "已破止损"
+    elif current >= tp3:
+        zone = "超目标3"
+    elif current >= tp2:
+        zone = "目标2~3"
+    elif current >= tp1:
+        zone = "目标1~2"
+    elif current >= buy_price:
+        zone = "成本~目标1"
+    else:
+        zone = "止损~成本(浮亏)"
+
+    # 动量是否转弱（用于建议微调）
+    momentum_weak = False
+    try:
+        if "MACD_hist" in df.columns and len(df) >= 2:
+            h0, h1 = float(df["MACD_hist"].iloc[-1]), float(df["MACD_hist"].iloc[-2])
+            if h0 < h1 and h0 < 0:
+                momentum_weak = True
+        rsi_col = "RSI_14" if "RSI_14" in df.columns else ("RSI" if "RSI" in df.columns else None)
+        if rsi_col and float(df[rsi_col].iloc[-1]) >= 70:
+            momentum_weak = True
+    except Exception:
+        pass
+
+    # 评价操作
+    evaluation = []
+    if buy_price <= plan_entry * 1.005:
+        evaluation.append(f"入场价 {buy_price:.2f} 不高于计划入场价 {plan_entry:.2f}，位置合理。")
+    else:
+        evaluation.append(f"入场价 {buy_price:.2f} 高于计划入场价 {plan_entry:.2f}（追高 {(buy_price/plan_entry-1)*100:.1f}%），成本偏高。")
+    _pl = "浮盈" if pnl_pct >= 0 else "浮亏"
+    evaluation.append(f"持有 {days_held} 个交易日（{cal_days} 天），当前{_pl} {pnl_pct:+.2f}%；期间最大浮盈 {max_gain:+.1f}%、最大回撤 {max_dd:+.1f}%。")
+    if touched_stop and current > sl:
+        evaluation.append(f"⚠️ 期间盘中曾跌破止损价 {sl:.2f} 后回升——若当时未止损属违纪，注意执行力。")
+    if reached_tp1 and current < tp1:
+        evaluation.append(f"曾触及目标1 {tp1:.2f} 但已回落，未及时锁利。")
+    if days_held > 5:
+        evaluation.append("已超出 T+0~T+5 计划周期，应重新评估持有理由。")
+
+    # 后续操作建议
+    if current <= sl:
+        action, color = "止损离场", "#EF5350"
+        advice = f"已跌破止损价 {sl:.2f}，按纪律止损离场，不抱侥幸、不向下补仓。"
+    elif current >= tp2:
+        action, color = "止盈减仓", "#26A69A"
+        advice = f"已达目标2 {tp2:.2f}，建议再减仓 1/3、仅留底仓博目标3 {tp3:.2f}，止损上移至 {tp1:.2f} 锁定利润。"
+    elif current >= tp1:
+        action, color = "减仓锁利", "#26A69A"
+        advice = f"已达目标1 {tp1:.2f}，减仓 1/3 锁利，止损上移至成本 {buy_price:.2f} 保本，剩余看向目标2 {tp2:.2f}。"
+    elif current >= buy_price:
+        if momentum_weak:
+            action, color = "持有偏减", "#FF9800"
+            advice = f"浮盈但动量转弱（MACD 柱缩短/RSI 偏高），可部分止盈，止损上移至成本 {buy_price:.2f} 保本。"
+        else:
+            action, color = "持有", "#2196F3"
+            advice = f"浮盈持有，止损上移至成本 {buy_price:.2f} 保本；接近目标1 {tp1:.2f} 再减仓 1/3。"
+    else:  # 浮亏，介于止损与成本之间
+        if momentum_weak or days_held >= 5:
+            action, color = "减仓/严守止损", "#FF9800"
+            advice = f"浮亏 {pnl_pct:.1f}% 但未破止损 {sl:.2f}，严守止损；反弹无量或趋势走弱则减仓，切勿向下补仓。"
+        else:
+            action, color = "持有观察", "#FF9800"
+            advice = f"浮亏但仍在止损 {sl:.2f} 之上，持有观察；一旦跌破止损坚决离场。"
+
+    return {
+        "valid": True,
+        "current_price": round(current, 2),
+        "buy_price": round(buy_price, 2),
+        "pnl_pct": round(pnl_pct, 2),
+        "days_held": days_held,
+        "cal_days": cal_days,
+        "max_gain": round(max_gain, 1),
+        "max_dd": round(max_dd, 1),
+        "zone": zone,
+        "touched_stop": bool(touched_stop),
+        "reached_tp1": bool(reached_tp1),
+        "reached_tp2": bool(reached_tp2),
+        "reached_tp3": bool(reached_tp3),
+        "evaluation": evaluation,
+        "advice": advice,
+        "advice_action": action,
+        "advice_color": color,
     }

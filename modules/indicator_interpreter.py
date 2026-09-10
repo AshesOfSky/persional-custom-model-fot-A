@@ -1064,13 +1064,24 @@ def interpret_elliott_wave(ew_summary: Dict) -> Dict:
 
     raw_score = wave_scores.get((wave_type, wave_num), 0)
 
-    # 方向调整
-    if direction == "bearish" and wave_type == "impulse":
-        raw_score = -raw_score
+    # 方向调整：分值表以“上涨推动 / 下跌修正”为基准。
+    if wave_type == "impulse":
+        if direction == "bearish":
+            raw_score = -raw_score
+        elif direction != "bullish":
+            raw_score = 0
+    elif wave_type == "corrective":
+        if direction == "bullish":
+            raw_score = -raw_score
+        elif direction != "bearish":
+            raw_score = 0
 
-    # C浪末端可能反转
+    # C浪末端可能反转，反转方向应与修正方向相反。
     if wave_type == "corrective" and wave_num == 3 and confidence > 60:
-        raw_score = 40  # 修正接近完成，反转机会
+        if direction == "bearish":
+            raw_score = 40
+        elif direction == "bullish":
+            raw_score = -40
 
     # 置信度衰减
     score = int(raw_score * (confidence / 100.0)) if confidence > 0 else 0
@@ -1088,16 +1099,46 @@ def interpret_elliott_wave(ew_summary: Dict) -> Dict:
     np_ = 100 - bp - brp
 
     # 操作建议
-    action_map = {
+    bullish_impulse_actions = {
         ("impulse", 1): "趋势启动，轻仓试多",
         ("impulse", 2): "回调到位，低吸建仓",
         ("impulse", 3): "主升浪，持仓待涨",
         ("impulse", 4): "回调中，等待企稳加仓",
         ("impulse", 5): "末浪运行，注意见顶减仓",
+    }
+    bearish_impulse_actions = {
+        ("impulse", 1): "下跌趋势启动，控制仓位",
+        ("impulse", 2): "反弹修正中，勿追涨",
+        ("impulse", 3): "主跌浪，控制仓位",
+        ("impulse", 4): "反弹中，等待压力确认",
+        ("impulse", 5): "末跌浪运行，注意止跌信号",
+    }
+    bearish_correction_actions = {
         ("corrective", 1): "修正A浪下跌，减仓观望",
         ("corrective", 2): "修正B浪反弹，勿追高",
         ("corrective", 3): "修正C浪，关注反转信号",
     }
+    bullish_correction_actions = {
+        ("corrective", 1): "修正A浪反弹，关注上方压力",
+        ("corrective", 2): "修正B浪回落，等待企稳",
+        ("corrective", 3): "修正C浪反弹，关注冲高结束",
+    }
+    if wave_type == "impulse":
+        if direction == "bearish":
+            action_map = bearish_impulse_actions
+        elif direction == "bullish":
+            action_map = bullish_impulse_actions
+        else:
+            action_map = {}
+    elif wave_type == "corrective":
+        if direction == "bullish":
+            action_map = bullish_correction_actions
+        elif direction == "bearish":
+            action_map = bearish_correction_actions
+        else:
+            action_map = {}
+    else:
+        action_map = {}
     action = action_map.get((wave_type, wave_num), "观望")
 
     # 目标位

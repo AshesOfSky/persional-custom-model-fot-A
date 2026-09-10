@@ -3,6 +3,8 @@ elliott_wave.py — Elliott波浪理论检测引擎
 多周期(1h/4h/日线/周线)波浪识别 + Fibonacci评分 + 综合研判
 """
 
+import hashlib
+import json
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
@@ -37,6 +39,41 @@ WAVE_BIAS = {
 
 # 多周期权重
 TF_WEIGHTS = {"周线": 0.35, "日线": 0.30, "4小时": 0.20, "1小时": 0.15}
+
+
+def _restore_swing_timestamps(swings: Dict, index: pd.Index) -> None:
+    """按摆动点位置恢复时间精度；小时线不能被压缩成同一天。"""
+    try:
+        datetime_index = pd.DatetimeIndex(index)
+        preserve_time = bool(
+            (datetime_index != datetime_index.normalize()).any()
+            or datetime_index.tz is not None
+        )
+    except (TypeError, ValueError):
+        preserve_time = False
+
+    def _format(position) -> Optional[str]:
+        try:
+            position = int(position)
+        except (OverflowError, TypeError, ValueError):
+            return None
+        if position < 0 or position >= len(index):
+            return None
+        value = index[position]
+        if preserve_time and hasattr(value, "isoformat"):
+            return value.isoformat()
+        if hasattr(value, "date"):
+            return str(value.date())
+        return str(value)
+
+    for kind in ("swing_highs", "swing_lows"):
+        for point in swings.get(kind, []):
+            pivot_time = _format(point.get("index"))
+            confirmed_time = _format(point.get("confirmed_index"))
+            if pivot_time is not None:
+                point["date"] = pivot_time
+            if confirmed_time is not None:
+                point["confirmed_date"] = confirmed_time
 
 
 # ── 锯齿线构建 ──────────────────────────────────────────────────────
@@ -136,9 +173,14 @@ def _validate_impulse_rules(candidate: Dict) -> Tuple[bool, List[str]]:
     验证Elliott三大铁律
     Returns: (is_valid, violations)
     """
-    prices = candidate["prices"]
-    direction = candidate["direction"]
     violations = []
+    try:
+        prices = [float(price) for price in candidate["prices"]]
+    except (KeyError, TypeError, ValueError):
+        return False, ["浪位价格格式无效"]
+    if len(prices) < 6 or not all(np.isfinite(price) for price in prices[:6]):
+        return False, ["浪位价格包含缺失或非有限值"]
+    direction = candidate.get("direction")
 
     if direction == "bullish":
         w1_len = prices[1] - prices[0]  # W1上涨幅度
@@ -146,6 +188,17 @@ def _validate_impulse_rules(candidate: Dict) -> Tuple[bool, List[str]]:
         w3_len = prices[3] - prices[2]  # W3上涨
         w4_retrace = prices[3] - prices[4]  # W4回撤
         w5_len = prices[5] - prices[4]  # W5上涨
+
+        if w1_len <= 0:
+            violations.append("W1未向上运行")
+        if w2_retrace <= 0:
+            violations.append("W2未形成向下回撤")
+        if w3_len <= 0:
+            violations.append("W3未向上运行")
+        if w4_retrace <= 0:
+            violations.append("W4未形成向下回撤")
+        if w5_len <= 0:
+            violations.append("W5未向上运行")
 
         # 规则1: W2回撤不超过W1的100%
         if w2_retrace >= w1_len:
@@ -159,12 +212,23 @@ def _validate_impulse_rules(candidate: Dict) -> Tuple[bool, List[str]]:
         if prices[4] < prices[1]:
             violations.append("W4进入W1区域")
 
-    else:  # bearish
+    elif direction == "bearish":
         w1_len = prices[0] - prices[1]
         w2_retrace = prices[2] - prices[1]
         w3_len = prices[2] - prices[3]
         w4_retrace = prices[4] - prices[3]
         w5_len = prices[4] - prices[5]
+
+        if w1_len <= 0:
+            violations.append("W1未向下运行")
+        if w2_retrace <= 0:
+            violations.append("W2未形成向上反弹")
+        if w3_len <= 0:
+            violations.append("W3未向下运行")
+        if w4_retrace <= 0:
+            violations.append("W4未形成向上反弹")
+        if w5_len <= 0:
+            violations.append("W5未向下运行")
 
         if w2_retrace >= w1_len:
             violations.append("W2回撤超过W1的100%")
@@ -172,6 +236,8 @@ def _validate_impulse_rules(candidate: Dict) -> Tuple[bool, List[str]]:
             violations.append("W3是最短推动浪")
         if prices[4] > prices[1]:
             violations.append("W4进入W1区域")
+    else:
+        violations.append("推动浪方向无效")
 
     return (len(violations) == 0, violations)
 
@@ -217,15 +283,32 @@ def _score_fibonacci_alignment(candidate: Dict) -> float:
 
 def _fib_match_score(actual: float, ideals: List[float]) -> float:
     """计算实际比率与理想Fibonacci比率的匹配度 (0-1)"""
-    if not ideals:
+    if not ideals or not np.isfinite(actual):
         return 0
-    best = min(abs(actual - ideal) for ideal in ideals)
+    valid_ideals = [float(ideal) for ideal in ideals if np.isfinite(ideal)]
+    if not valid_ideals:
+        return 0
+    best = min(abs(actual - ideal) for ideal in valid_ideals)
+
+    # 容差内视为完全匹配；超出后在 3×容差处连续、单调地衰减到 0。
+    # 旧版在 3×容差边界会从 0.5 跳升到约 0.76，导致“偏得更远反而得分更高”。
     if best <= TOLERANCE:
         return 1.0
-    elif best <= TOLERANCE * 3:
-        return 0.5
-    else:
-        return max(0, 1.0 - best)
+    fade_span = TOLERANCE * 2
+    if fade_span <= 0:
+        return 0
+    return max(0.0, 1.0 - (best - TOLERANCE) / fade_span)
+
+
+def _keep_latest_candidates(candidates: List[Dict], limit: int = 3) -> List[Dict]:
+    """按结束位置保留最近候选；同一结束位置再以 Fibonacci 分数择优。"""
+    if limit <= 0:
+        return []
+    return sorted(
+        candidates,
+        key=lambda x: (x.get("end_index", -1), x.get("fib_score", 0)),
+        reverse=True,
+    )[:limit]
 
 
 # ── ABC修正检测 ─────────────────────────────────────────────────────
@@ -240,11 +323,41 @@ def _find_corrective_candidates(pivots: List[Dict], after_impulse: Dict = None) 
     if len(pivots) < 4:
         return candidates
 
-    for i in range(len(pivots) - 3):
+    scan_positions = range(len(pivots) - 3)
+    parent_direction = None
+    if after_impulse is not None:
+        parent_end = after_impulse.get("end_index")
+        parent_pivots = after_impulse.get("pivots") or []
+        parent_last = parent_pivots[-1] if parent_pivots else {}
+
+        def _is_parent_end(point: Dict) -> bool:
+            if point.get("index") != parent_end:
+                return False
+            if parent_last.get("type") and point.get("type") != parent_last.get("type"):
+                return False
+            if parent_last.get("price") is not None and not np.isclose(
+                float(point.get("price")),
+                float(parent_last.get("price")),
+            ):
+                return False
+            return True
+
+        anchor_pos = next(
+            (i for i, point in enumerate(pivots) if _is_parent_end(point)),
+            None,
+        )
+        # ABC 的 0 点必须与父推动浪 W5 完全相接；无法找到锚点则不猜测。
+        if anchor_pos is None or anchor_pos + 3 >= len(pivots):
+            return candidates
+        scan_positions = [anchor_pos]
+        parent_direction = after_impulse.get("direction")
+
+    for i in scan_positions:
         pts = pivots[i:i + 4]
         # 看跌修正 (从高开始): high→low→high→low
         if pts[0]["type"] == "high" and pts[1]["type"] == "low" and \
-           pts[2]["type"] == "high" and pts[3]["type"] == "low":
+           pts[2]["type"] == "high" and pts[3]["type"] == "low" and \
+           parent_direction != "bearish":
             a_len = pts[0]["price"] - pts[1]["price"]
             if a_len <= 0:
                 continue
@@ -256,18 +369,25 @@ def _find_corrective_candidates(pivots: List[Dict], after_impulse: Dict = None) 
             c_score = _fib_match_score(c_ratio, FIB_IDEAL["wC_extension"])
             fib_score = (b_score * 50 + c_score * 50)
 
-            candidates.append({
+            candidate = {
                 "pivots": pts,
                 "prices": [pt["price"] for pt in pts],
                 "direction": "bearish_correction",
                 "fib_score": fib_score,
                 "start_index": pts[0]["index"],
                 "end_index": pts[3]["index"],
-            })
+            }
+            if after_impulse is not None:
+                candidate.update({
+                    "parent_impulse_start_index": after_impulse.get("start_index"),
+                    "parent_impulse_end_index": after_impulse.get("end_index"),
+                })
+            candidates.append(candidate)
 
         # 看涨修正 (从低开始): low→high→low→high
         if pts[0]["type"] == "low" and pts[1]["type"] == "high" and \
-           pts[2]["type"] == "low" and pts[3]["type"] == "high":
+           pts[2]["type"] == "low" and pts[3]["type"] == "high" and \
+           parent_direction != "bullish":
             a_len = pts[1]["price"] - pts[0]["price"]
             if a_len <= 0:
                 continue
@@ -279,14 +399,20 @@ def _find_corrective_candidates(pivots: List[Dict], after_impulse: Dict = None) 
             c_score = _fib_match_score(c_ratio, FIB_IDEAL["wC_extension"])
             fib_score = (b_score * 50 + c_score * 50)
 
-            candidates.append({
+            candidate = {
                 "pivots": pts,
                 "prices": [pt["price"] for pt in pts],
                 "direction": "bullish_correction",
                 "fib_score": fib_score,
                 "start_index": pts[0]["index"],
                 "end_index": pts[3]["index"],
-            })
+            }
+            if after_impulse is not None:
+                candidate.update({
+                    "parent_impulse_start_index": after_impulse.get("start_index"),
+                    "parent_impulse_end_index": after_impulse.get("end_index"),
+                })
+            candidates.append(candidate)
 
     return candidates
 
@@ -312,9 +438,13 @@ def _determine_current_wave(
         "description": "无法识别当前波浪位置",
     }
 
-    # 优先检查最近完成的浪型
-    recent_impulse = impulses[-1] if impulses else None
-    recent_correction = corrections[-1] if corrections else None
+    # 候选的存储顺序属于输出细节，当前位置必须显式按结束位置选最近结构。
+    recent_impulse = max(
+        impulses, key=lambda x: x.get("end_index", -1), default=None
+    )
+    recent_correction = max(
+        corrections, key=lambda x: x.get("end_index", -1), default=None
+    )
 
     # 判断哪个更近
     latest_end = 0
@@ -355,6 +485,19 @@ def _determine_current_wave(
                         "description": "价格在前高前低之间，可能处于第2浪回调",
                     })
         return result
+
+    # 透传当前浪的来源，使目标投射、支撑压力和调用方可绑定到同一浪型，
+    # 避免误拿另一组“分数漂亮但无关”的历史结构。
+    result.update({
+        "source_pattern_type": latest_type,
+        "source_pattern_direction": latest_pattern.get("direction"),
+        "source_start_index": latest_pattern.get("start_index"),
+        "source_end_index": latest_pattern.get("end_index"),
+    })
+    source_pivots = latest_pattern.get("pivots") or []
+    if source_pivots:
+        result["source_confirmed_index"] = source_pivots[-1].get("confirmed_index")
+        result["source_confirmed_date"] = source_pivots[-1].get("confirmed_date")
 
     # 基于最近完成的浪型推断当前位置
     if latest_type == "impulse":
@@ -443,7 +586,11 @@ def _determine_current_wave(
 
 def _project_targets(current_wave: Dict, impulses: List[Dict],
                      corrections: List[Dict]) -> List[Dict]:
-    """基于当前浪位和Fibonacci计算预测目标"""
+    """基于当前浪位和其来源浪型计算 Fibonacci 目标。
+
+    当前浪必须带 ``source_pattern_type/source_start_index/source_end_index``。
+    起止位置任一缺失或找不到精确来源时宁可返回空目标，也不引用另一组历史浪型。
+    """
     targets = []
 
     if not impulses and not corrections:
@@ -451,55 +598,549 @@ def _project_targets(current_wave: Dict, impulses: List[Dict],
 
     cw_type = current_wave.get("type", "unknown")
     cw_num = current_wave.get("wave_number", 0)
-    cw_dir = current_wave.get("direction", "neutral")
+    source_type = current_wave.get("source_pattern_type")
+    source_direction = current_wave.get("source_pattern_direction")
+    source_end = current_wave.get("source_end_index")
+    source_start = current_wave.get("source_start_index")
 
-    if cw_type == "impulse" and impulses:
-        imp = impulses[-1]
+    def _source_of(patterns: List[Dict], expected_type: str) -> Optional[Dict]:
+        if (
+            source_type != expected_type
+            or source_start is None
+            or source_end is None
+        ):
+            return None
+        matches = [p for p in patterns if p.get("end_index") == source_end]
+        exact = [p for p in matches if p.get("start_index") == source_start]
+        if source_direction is not None:
+            exact = [
+                p for p in exact
+                if p.get("direction") == source_direction
+            ]
+        if not exact:
+            return None
+        matches = exact
+        return max(matches, key=lambda x: x.get("fib_score", 0), default=None)
+
+    def _append(price: float, label: str, ratio: float, direction: str) -> None:
+        if np.isfinite(price) and price > 0:
+            targets.append({
+                "price": round(float(price), 2),
+                "label": label,
+                "ratio": f"{ratio * 100:.1f}%",
+                "direction": direction,
+            })
+
+    if cw_type == "impulse":
+        imp = _source_of(impulses, "impulse")
+        if not imp:
+            return targets
         prices = imp["prices"]
+        if len(prices) < 6:
+            return targets
         w1_len = abs(prices[1] - prices[0])
+        if not np.isfinite(w1_len) or w1_len <= 0:
+            return targets
+        is_bullish = imp.get("direction") == "bullish"
+        is_bearish = imp.get("direction") == "bearish"
+        if not (is_bullish or is_bearish):
+            return targets
+        sign = 1.0 if is_bullish else -1.0
+        target_direction = "up" if is_bullish else "down"
 
-        if cw_num <= 3 and imp["direction"] == "bullish":
+        if cw_num <= 3:
             # 预测W3目标
-            w3_base = prices[2] if len(prices) > 2 else prices[0]
+            w3_base = prices[2]
             for ratio, label in [(1.618, "W3目标(161.8%)"), (2.0, "W3目标(200%)")]:
-                targets.append({
-                    "price": round(w3_base + w1_len * ratio, 2),
-                    "label": label,
-                    "ratio": f"{ratio*100:.1f}%",
-                    "direction": "up",
-                })
+                _append(
+                    w3_base + sign * w1_len * ratio,
+                    label,
+                    ratio,
+                    target_direction,
+                )
 
-        if cw_num >= 4 and imp["direction"] == "bullish":
+        if cw_num >= 4:
             # 预测W5目标
-            w5_base = prices[4] if len(prices) > 4 else prices[2]
+            w5_base = prices[4]
             for ratio, label in [(1.0, "W5目标(=W1)"), (0.618, "W5目标(61.8%)")]:
-                targets.append({
-                    "price": round(w5_base + w1_len * ratio, 2),
-                    "label": label,
-                    "ratio": f"{ratio*100:.1f}%",
-                    "direction": "up",
-                })
+                _append(
+                    w5_base + sign * w1_len * ratio,
+                    label,
+                    ratio,
+                    target_direction,
+                )
 
-    if cw_type == "corrective" and corrections:
-        corr = corrections[-1]
+    if cw_type == "corrective":
+        corr = _source_of(corrections, "correction")
+        if not corr:
+            return targets
         prices = corr["prices"]
+        if len(prices) < 4:
+            return targets
         a_len = abs(prices[0] - prices[1])
-
-        if "bearish" in corr["direction"]:
-            # C浪目标
-            c_base = prices[2]
-            for ratio, label in [(1.0, "C浪目标(=A)"), (1.618, "C浪目标(161.8%)")]:
-                targets.append({
-                    "price": round(c_base - a_len * ratio, 2),
-                    "label": label,
-                    "ratio": f"{ratio*100:.1f}%",
-                    "direction": "down",
-                })
+        if not np.isfinite(a_len) or a_len <= 0:
+            return targets
+        corr_direction = str(corr.get("direction") or "")
+        if "bearish" in corr_direction:
+            sign, target_direction = -1.0, "down"
+        elif "bullish" in corr_direction:
+            sign, target_direction = 1.0, "up"
+        else:
+            return targets
+        c_base = prices[2]
+        for ratio, label in [(1.0, "C浪目标(=A)"), (1.618, "C浪目标(161.8%)")]:
+            _append(
+                c_base + sign * a_len * ratio,
+                label,
+                ratio,
+                target_direction,
+            )
 
     return targets[:4]  # 最多4个目标
 
 
 # ── 构建浪标签 ──────────────────────────────────────────────────────
+
+def _reliability_id(namespace: str, payload: Dict) -> str:
+    encoded = json.dumps(
+        payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return f"elliott-{namespace}-{hashlib.sha256(encoded).hexdigest()[:20]}"
+
+
+def _reliability_time(value) -> Optional[str]:
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+def _reliability_point(point: Dict, label: str) -> Dict:
+    return {
+        "index": int(point["index"]),
+        "time": _reliability_time(point.get("date")),
+        "price": round(float(point["price"]), 6),
+        "label": label,
+        "pivotType": str(point["type"]),
+        "confirmedIndex": (
+            int(point["confirmed_index"])
+            if point.get("confirmed_index") is not None else None
+        ),
+        "confirmedTime": _reliability_time(point.get("confirmed_date")),
+    }
+
+
+def _confirmed_impulse_view(
+    candidate: Dict,
+    *,
+    level: int = 0,
+    parent_structure_id: Optional[str] = None,
+    parent_leg: Optional[int] = None,
+) -> Optional[Dict]:
+    points = candidate.get("pivots") or []
+    if len(points) != 6 or not points[-1].get("confirmed_date"):
+        return None
+    point_views = [
+        _reliability_point(point, str(index))
+        for index, point in enumerate(points)
+    ]
+    kind = "impulse" if level == 0 else "nested_impulse"
+    identity = {
+        "kind": kind,
+        "level": int(level),
+        "parentStructureId": parent_structure_id,
+        "parentLeg": parent_leg,
+        "direction": candidate["direction"],
+        "points": point_views,
+        "confirmedTime": point_views[-1]["confirmedTime"],
+        "methodVersion": "elliott-canonical-reliability-1",
+    }
+    return {
+        **identity,
+        "structureId": _reliability_id(kind, identity),
+        "startTime": point_views[0]["time"],
+        "endTime": point_views[-1]["time"],
+        "startIndex": point_views[0]["index"],
+        "endIndex": point_views[-1]["index"],
+        "startPrice": point_views[0]["price"],
+        "endPrice": point_views[-1]["price"],
+        "fibScore": round(float(candidate.get("fib_score", 0.0)), 3),
+        "ruleMode": "strict",
+        "violations": [],
+        "nestedDirection": "consistent" if level > 0 else None,
+        "validationBasis": (
+            "strict_child_impulse_parent_leg_direction_and_confirmed_pivot"
+            if level > 0
+            else "three_strict_impulse_rules_and_confirmed_endpoint_pivot"
+        ),
+        "validated": True,
+        "confirmed": True,
+        "status": "confirmed",
+        "scoreEligible": False,
+        "alertEligible": False,
+    }
+
+
+def _correction_moves(points: List[Dict]) -> List[float]:
+    return [
+        float(right["price"]) - float(left["price"])
+        for left, right in zip(points, points[1:])
+    ]
+
+
+def _is_contracting_triangle(points: List[Dict], parent_direction: str) -> bool:
+    if len(points) != 6:
+        return False
+    moves = _correction_moves(points)
+    expected_first = -1.0 if parent_direction == "bullish" else 1.0
+    if moves[0] * expected_first <= 0:
+        return False
+    if any(left * right >= 0 for left, right in zip(moves, moves[1:])):
+        return False
+    amplitudes = [abs(move) for move in moves]
+    return (
+        all(nxt <= current * 1.15 for current, nxt in zip(amplitudes, amplitudes[1:]))
+        and amplitudes[-1] <= amplitudes[0] * 0.75
+    )
+
+
+def _is_double_three(points: List[Dict], parent_direction: str) -> bool:
+    if len(points) != 8:
+        return False
+    moves = _correction_moves(points)
+    expected_first = -1.0 if parent_direction == "bullish" else 1.0
+    signs = [expected_first * (-1.0 if index % 2 else 1.0) for index in range(7)]
+    if any(move * sign <= 0 for move, sign in zip(moves, signs)):
+        return False
+    origin = float(points[0]["price"])
+    first_c = float(points[3]["price"])
+    x_price = float(points[4]["price"])
+    second_c = float(points[7]["price"])
+    if parent_direction == "bullish":
+        return first_c < x_price < origin and second_c < x_price
+    return origin < x_price < first_c and second_c > x_price
+
+
+def _complex_correction_views(pivots: List[Dict], roots: List[tuple]) -> List[Dict]:
+    structures = []
+    labels = {
+        "triangle": ["0", "A", "B", "C", "D", "E"],
+        "double_three": ["0", "A", "B", "C", "X", "A2", "B2", "C2"],
+    }
+    for candidate, root_view in roots:
+        root_points = candidate.get("pivots") or []
+        if not root_points:
+            continue
+        endpoint = root_points[-1]
+        anchor = next(
+            (
+                index for index, point in enumerate(pivots)
+                if point.get("index") == endpoint.get("index")
+                and point.get("type") == endpoint.get("type")
+                and np.isclose(float(point.get("price")), float(endpoint.get("price")))
+            ),
+            None,
+        )
+        if anchor is None:
+            continue
+        follow = pivots[anchor + 1:]
+        pattern = None
+        correction_points = []
+        if len(follow) >= 7:
+            possible = [endpoint, *follow[:7]]
+            if follow[6].get("confirmed_date") and _is_double_three(
+                possible, candidate["direction"]
+            ):
+                pattern = "double_three"
+                correction_points = possible
+        if pattern is None and len(follow) >= 5:
+            possible = [endpoint, *follow[:5]]
+            if follow[4].get("confirmed_date") and _is_contracting_triangle(
+                possible, candidate["direction"]
+            ):
+                pattern = "triangle"
+                correction_points = possible
+        if pattern is None:
+            continue
+        point_views = [
+            _reliability_point(point, label)
+            for point, label in zip(correction_points, labels[pattern])
+        ]
+        direction = "bearish" if candidate["direction"] == "bullish" else "bullish"
+        identity = {
+            "kind": "complex_correction",
+            "pattern": pattern,
+            "level": 0,
+            "parentStructureId": root_view["structureId"],
+            "direction": direction,
+            "points": point_views,
+            "confirmedTime": point_views[-1]["confirmedTime"],
+            "methodVersion": "elliott-canonical-reliability-1",
+        }
+        structures.append({
+            **identity,
+            "structureId": _reliability_id(pattern, identity),
+            "startTime": point_views[0]["time"],
+            "endTime": point_views[-1]["time"],
+            "startIndex": point_views[0]["index"],
+            "endIndex": point_views[-1]["index"],
+            "startPrice": point_views[0]["price"],
+            "endPrice": point_views[-1]["price"],
+            "validationBasis": (
+                "confirmed_contracting_five_leg_correction"
+                if pattern == "triangle"
+                else "confirmed_two_abc_groups_with_x_connector"
+            ),
+            "validated": True,
+            "confirmed": True,
+            "status": "confirmed",
+            "scoreEligible": False,
+            "alertEligible": False,
+        })
+    return structures
+
+
+def _scan_strict_impulses(
+    frame: pd.DataFrame,
+    windows: List[int],
+    *,
+    index_offset: int = 0,
+) -> List[Dict]:
+    from .signal_generator import detect_swing_highs_lows
+
+    candidates = []
+    seen = set()
+    for window in windows:
+        if len(frame) < window * 2 + 6:
+            continue
+        swings = detect_swing_highs_lows(frame, window=window)
+        _restore_swing_timestamps(swings, frame.index)
+        pivots = _build_zigzag(swings["swing_highs"], swings["swing_lows"])
+        if index_offset:
+            adjusted = []
+            for point in pivots:
+                copy = dict(point)
+                copy["index"] = int(copy["index"]) + index_offset
+                if copy.get("confirmed_index") is not None:
+                    copy["confirmed_index"] = int(copy["confirmed_index"]) + index_offset
+                adjusted.append(copy)
+            pivots = adjusted
+        for candidate in (
+            _find_impulse_candidates(pivots, "bullish")
+            + _find_impulse_candidates(pivots, "bearish")
+        ):
+            valid, violations = _validate_impulse_rules(candidate)
+            if not valid or violations:
+                continue
+            candidate["fib_score"] = _score_fibonacci_alignment(candidate)
+            key = (
+                candidate["direction"],
+                tuple(
+                    (point.get("date"), round(float(point["price"]), 8))
+                    for point in candidate["pivots"]
+                ),
+            )
+            if key not in seen:
+                seen.add(key)
+                candidates.append(candidate)
+    return candidates
+
+
+def _nested_impulse_views(
+    frame: pd.DataFrame,
+    parent_candidate: Dict,
+    parent_structure_id: str,
+    *,
+    level: int = 1,
+    max_level: int = 3,
+) -> Tuple[List[Dict], int]:
+    if level > max_level:
+        return [], 0
+    structures = []
+    rejected = 0
+    points = parent_candidate.get("pivots") or []
+    for leg_number, (left, right) in enumerate(zip(points, points[1:]), start=1):
+        start = int(left["index"])
+        end = int(right["index"])
+        if end - start < 12 or start < 0 or end >= len(frame):
+            continue
+        leg_frame = frame.iloc[start:end + 1]
+        expected = (
+            "bullish" if float(right["price"]) > float(left["price"])
+            else "bearish"
+        )
+        for child in _scan_strict_impulses(
+            leg_frame, [1, 2, 3], index_offset=start
+        ):
+            if child["direction"] != expected:
+                rejected += 1
+                continue
+            view = _confirmed_impulse_view(
+                child,
+                level=level,
+                parent_structure_id=parent_structure_id,
+                parent_leg=leg_number,
+            )
+            if view is None:
+                continue
+            structures.append(view)
+            descendants, descendant_rejected = _nested_impulse_views(
+                frame,
+                child,
+                view["structureId"],
+                level=level + 1,
+                max_level=max_level,
+            )
+            structures.extend(descendants)
+            rejected += descendant_rejected
+    unique = {item["structureId"]: item for item in structures}
+    return list(unique.values()), rejected
+
+
+def _frame_reliability_hash(frame: pd.DataFrame) -> str:
+    columns = [
+        name for name in ("Open", "High", "Low", "Close", "Volume")
+        if name in frame.columns
+    ]
+    rows = []
+    for index, values in zip(frame.index, frame[columns].to_numpy()):
+        rows.append([
+            _reliability_time(index),
+            *[
+                round(float(value), 8) if np.isfinite(float(value)) else None
+                for value in values
+            ],
+        ])
+    return _reliability_id("input", {"columns": columns, "rows": rows})
+
+
+def _empty_reliability(frame: Optional[pd.DataFrame] = None) -> Dict:
+    has_frame = isinstance(frame, pd.DataFrame) and not frame.empty
+    return {
+        "version": "elliott-reliability-1",
+        "source": "modules.elliott_wave",
+        "methodVersion": "elliott-canonical-reliability-1",
+        "originTime": _reliability_time(frame.index[0]) if has_frame else None,
+        "lastInputTime": _reliability_time(frame.index[-1]) if has_frame else None,
+        "inputHash": _frame_reliability_hash(frame) if has_frame else None,
+        "prefixPolicy": "append_only_confirmed_ids_while_origin_and_method_match",
+        "detectionWindows": [],
+        "confirmedStructures": [],
+        "provisionalStructures": [],
+        "levels": [],
+        "nestedDirection": {
+            "acceptedCount": 0,
+            "rejectedMismatchCount": 0,
+            "policy": "child_direction_must_match_parent_leg",
+        },
+    }
+
+
+def _build_canonical_reliability(
+    frame: pd.DataFrame,
+    pivots: List[Dict],
+    impulses: List[Dict],
+    *,
+    detection_window: int,
+) -> Dict:
+    result = _empty_reliability(frame)
+    result["detectionWindows"] = [int(detection_window)]
+    roots = []
+    structures = []
+    rejected = 0
+    for candidate in impulses:
+        view = _confirmed_impulse_view(candidate)
+        if view is None:
+            continue
+        roots.append((candidate, view))
+        structures.append(view)
+        nested, nested_rejected = _nested_impulse_views(
+            frame, candidate, view["structureId"]
+        )
+        structures.extend(nested)
+        rejected += nested_rejected
+    structures.extend(_complex_correction_views(pivots, roots))
+    result["confirmedStructures"] = sorted(
+        {item["structureId"]: item for item in structures}.values(),
+        key=lambda item: (
+            str(item.get("confirmedTime") or ""),
+            int(item.get("level", 0)),
+            item["structureId"],
+        ),
+    )
+    result["nestedDirection"] = {
+        "acceptedCount": sum(
+            1 for item in result["confirmedStructures"]
+            if item["kind"] == "nested_impulse"
+        ),
+        "rejectedMismatchCount": rejected,
+        "policy": "child_direction_must_match_parent_leg",
+    }
+    return result
+
+
+def _merge_reliability_streams(
+    frame: pd.DataFrame,
+    streams: List[Dict],
+    current_wave: Dict,
+) -> Dict:
+    result = _empty_reliability(frame)
+    structures = {}
+    rejected = 0
+    windows = set()
+    for stream in streams:
+        windows.update(stream.get("detectionWindows") or [])
+        rejected += int(
+            (stream.get("nestedDirection") or {}).get("rejectedMismatchCount", 0)
+        )
+        for item in stream.get("confirmedStructures") or []:
+            structures[item["structureId"]] = item
+    result["detectionWindows"] = sorted(int(value) for value in windows)
+    result["confirmedStructures"] = sorted(
+        structures.values(),
+        key=lambda item: (
+            str(item.get("confirmedTime") or ""),
+            int(item.get("level", 0)),
+            item["structureId"],
+        ),
+    )
+    for level in sorted({int(item["level"]) for item in structures.values()}):
+        items = [item for item in structures.values() if int(item["level"]) == level]
+        result["levels"].append({
+            "level": level,
+            "name": "primary" if level == 0 else f"nested_{level}",
+            "confirmedCount": len(items),
+            "directions": sorted({item["direction"] for item in items}),
+        })
+    nested_count = sum(
+        1 for item in structures.values() if item["kind"] == "nested_impulse"
+    )
+    result["nestedDirection"] = {
+        "acceptedCount": nested_count,
+        "rejectedMismatchCount": rejected,
+        "policy": "child_direction_must_match_parent_leg",
+    }
+    identity = {
+        "kind": "current_count",
+        "type": current_wave.get("type"),
+        "waveNumber": current_wave.get("wave_number"),
+        "direction": current_wave.get("direction"),
+        "lastInputTime": result["lastInputTime"],
+        "methodVersion": "elliott-canonical-reliability-1",
+    }
+    result["provisionalStructures"] = [{
+        **identity,
+        "structureId": _reliability_id("provisional", identity),
+        "validationBasis": "current_count_has_no_future_structure_confirmation",
+        "validated": False,
+        "confirmed": False,
+        "status": "provisional",
+        "scoreEligible": False,
+        "alertEligible": False,
+    }]
+    return result
+
 
 def _build_wave_labels(impulses: List[Dict], corrections: List[Dict]) -> List[Dict]:
     """构建图表标注用的浪标签列表"""
@@ -519,6 +1160,8 @@ def _build_wave_labels(impulses: List[Dict], corrections: List[Dict]) -> List[Di
                 "label": wave_names[idx],
                 "wave_type": f"impulse_{direction}",
                 "pivot_type": pt["type"],
+                "confirmed_index": pt.get("confirmed_index"),
+                "confirmed_date": pt.get("confirmed_date"),
             })
 
     for corr in corrections:
@@ -535,20 +1178,22 @@ def _build_wave_labels(impulses: List[Dict], corrections: List[Dict]) -> List[Di
                 "label": wave_names[idx],
                 "wave_type": f"corrective_{direction}",
                 "pivot_type": pt["type"],
+                "confirmed_index": pt.get("confirmed_index"),
+                "confirmed_date": pt.get("confirmed_date"),
             })
 
-    return labels
+    return sorted(labels, key=lambda x: (x.get("index", -1), x.get("wave_type", "")))
 
 
 # ── 单周期主入口 ────────────────────────────────────────────────────
 
-def detect_elliott_waves(df: pd.DataFrame, window: int = 10) -> Dict:
+def detect_elliott_waves(df: pd.DataFrame, window: Optional[int] = None) -> Dict:
     """
     单周期波浪检测主入口
 
     Args:
         df: OHLCV DataFrame
-        window: 枢轴检测窗口
+        window: 指定时仅扫描该枢轴窗口；None 时自适应扫描 5/8/10/13
 
     Returns:
         impulse_waves, corrective_waves, current_wave, projected_targets, wave_labels
@@ -562,22 +1207,43 @@ def detect_elliott_waves(df: pd.DataFrame, window: int = 10) -> Dict:
         },
         "projected_targets": [],
         "wave_labels": [],
+        "reliability": _empty_reliability(df if isinstance(df, pd.DataFrame) else None),
     }
 
     if df is None or df.empty or len(df) < 30:
         return empty_result
 
+    # 直接调用入口时也统一为严格递增、唯一的时间轴，避免倒序或重复行情
+    # 让位置索引与标签时间相互矛盾。重复时沿用行情模块的 keep-last 口径。
+    try:
+        df = df.sort_index(kind="stable")
+        df = df.loc[~df.index.duplicated(keep="last")]
+    except (AttributeError, TypeError, ValueError):
+        return empty_result
+    if len(df) < 30:
+        return empty_result
+
     from .signal_generator import detect_swing_highs_lows
 
-    # 多窗口扫描，取最佳结果
-    best_result = None
-    best_score = -1
+    # 未显式指定时保持原有自适应多窗口；传入 window 时严格尊重调用方参数。
+    if window is None:
+        scan_windows = [5, 8, 10, 13]
+    else:
+        if not isinstance(window, (int, np.integer)) or int(window) < 1:
+            raise ValueError("window 必须是正整数或 None")
+        scan_windows = [int(window)]
 
-    for w in [5, 8, 10, 13]:
+    # 跨窗口优先选择结束位置最近的有效结构，同等时效再比较 Fibonacci 总分。
+    best_result = None
+    best_selection_key = None
+    reliability_streams = []
+
+    for w in scan_windows:
         if len(df) < w * 2 + 6:
             continue
 
         swings = detect_swing_highs_lows(df, window=w)
+        _restore_swing_timestamps(swings, df.index)
         zigzag = _build_zigzag(swings["swing_highs"], swings["swing_lows"])
 
         if len(zigzag) < 4:
@@ -596,21 +1262,48 @@ def detect_elliott_waves(df: pd.DataFrame, window: int = 10) -> Dict:
                 cand["is_valid"] = True
                 valid_impulses.append(cand)
 
-        # 按Fibonacci评分排序，保留最佳
-        valid_impulses.sort(key=lambda x: x["fib_score"], reverse=True)
-        valid_impulses = valid_impulses[:3]  # 保留Top 3
+        reliability_streams.append(
+            _build_canonical_reliability(
+                df,
+                zigzag,
+                valid_impulses,
+                detection_window=w,
+            )
+        )
 
-        # 检测修正浪
-        corrective = _find_corrective_candidates(zigzag)
-        corrective.sort(key=lambda x: x["fib_score"], reverse=True)
-        corrective = corrective[:3]
+        # 保留最近三组；同一结束位置再以 Fibonacci 评分择优。
+        valid_impulses = _keep_latest_candidates(valid_impulses, limit=3)
+
+        # ABC 必须与本窗口最近的有效推动浪 W5 相接；没有父推动浪则不猜测修正结构。
+        parent_impulse = max(
+            valid_impulses,
+            key=lambda x: x.get("end_index", -1),
+            default=None,
+        )
+        corrective = (
+            _find_corrective_candidates(zigzag, after_impulse=parent_impulse)
+            if parent_impulse is not None
+            else []
+        )
+        corrective = _keep_latest_candidates(corrective, limit=3)
 
         # 评估总分
         total_score = sum(imp["fib_score"] for imp in valid_impulses) + \
                       sum(c["fib_score"] for c in corrective)
 
-        if total_score > best_score:
-            best_score = total_score
+        pattern_ends = [
+            x.get("end_index", -1) for x in valid_impulses + corrective
+        ]
+        has_pattern = bool(pattern_ends)
+        latest_end = (
+            max(pattern_ends)
+            if has_pattern
+            else max((p.get("index", -1) for p in zigzag), default=-1)
+        )
+        selection_key = (int(has_pattern), latest_end, total_score)
+
+        if best_selection_key is None or selection_key > best_selection_key:
+            best_selection_key = selection_key
             current_price = float(df["Close"].iloc[-1])
 
             current_wave = _determine_current_wave(
@@ -625,9 +1318,18 @@ def detect_elliott_waves(df: pd.DataFrame, window: int = 10) -> Dict:
                 "current_wave": current_wave,
                 "projected_targets": targets,
                 "wave_labels": wave_labels,
+                "detection_window": w,
             }
 
-    return best_result if best_result else empty_result
+    if best_result is None:
+        empty_result["reliability"] = _empty_reliability(df)
+        return empty_result
+    best_result["reliability"] = _merge_reliability_streams(
+        df,
+        reliability_streams,
+        best_result["current_wave"],
+    )
+    return best_result
 
 
 # ── 多周期综合分析 ──────────────────────────────────────────────────
@@ -741,9 +1443,17 @@ def _synthesize_multi_timeframe(tf_results: Dict) -> Dict:
 
         bias = WAVE_BIAS.get(bias_key, 0)
 
-        # 方向调整
-        if direction == "bearish" and wave_type == "impulse":
-            bias = -bias
+        # 方向调整：偏向表以“上涨推动 / 下跌修正”为基准。
+        if wave_type == "impulse":
+            if direction == "bearish":
+                bias = -bias
+            elif direction != "bullish":
+                bias = 0
+        elif wave_type == "corrective":
+            if direction == "bullish":
+                bias = -bias
+            elif direction != "bearish":
+                bias = 0
 
         # 置信度衰减
         bias *= (confidence / 100.0)

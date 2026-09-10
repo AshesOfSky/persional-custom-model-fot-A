@@ -1,0 +1,6535 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Market Strategy Terminal",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/market/quote": {
+      "post": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Query Market Quote",
+        "operationId": "queryMarketQuote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteViewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/quote/refresh": {
+      "post": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Refresh Market Quote",
+        "operationId": "refreshMarketQuote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/market/bars/query": {
+      "post": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Query Market Bars",
+        "operationId": "queryMarketBars",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketBarsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/snapshots": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Create Analysis Snapshot",
+        "operationId": "createAnalysisSnapshot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisSnapshot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request or analysis input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data or service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/research": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Create Research Analysis",
+        "operationId": "createResearchAnalysis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchAnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request or analysis input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Data or service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/realtime-preview": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Create Realtime Analysis Preview",
+        "operationId": "createRealtimeAnalysisPreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RealtimeAnalysisPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealtimeAnalysisPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Preview input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Preview data unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analysis/structures": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Create Technical Structure Analysis",
+        "operationId": "createTechnicalStructureAnalysis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicalStructureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicalStructureResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request or analysis input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Structure service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/fundamentals/snapshots": {
+      "post": {
+        "tags": [
+          "fundamentals"
+        ],
+        "summary": "Create Fundamental Snapshot",
+        "operationId": "createFundamentalSnapshot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FundamentalSnapshotRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundamentalSnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fundamentals not applicable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fundamental data unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/instruments/search": {
+      "get": {
+        "tags": [
+          "instruments"
+        ],
+        "summary": "Search Instruments",
+        "operationId": "searchInstruments",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstrumentSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/watchlist/entries": {
+      "get": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "List Watchlist Entries",
+        "operationId": "listWatchlistEntries",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryListResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Create Watchlist Entry",
+        "operationId": "createWatchlistEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistEntryCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Watchlist entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Watchlist conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Watchlist input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/watchlist/entries/order": {
+      "put": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Reorder Watchlist Entries",
+        "operationId": "reorderWatchlistEntries",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistEntriesReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Watchlist entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Watchlist conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Watchlist input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/watchlist/entries/{entry_id}": {
+      "get": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Get Watchlist Entry",
+        "operationId": "getWatchlistEntry",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Watchlist entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Watchlist conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Watchlist input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Patch Watchlist Entry",
+        "operationId": "patchWatchlistEntry",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistEntryPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Watchlist entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Watchlist conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Watchlist input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "watchlist"
+        ],
+        "summary": "Delete Watchlist Entry",
+        "operationId": "deleteWatchlistEntry",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "expected_revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Expected Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistEntryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Watchlist entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Watchlist conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Watchlist input rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Watchlist service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/system/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Get Health",
+        "operationId": "getSystemHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Adjustment": {
+        "type": "string",
+        "enum": [
+          "forward",
+          "backward",
+          "none"
+        ],
+        "title": "Adjustment"
+      },
+      "AnalysisRequest": {
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/DataQuery"
+          },
+          "benchmark_query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataQuery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "has_position": {
+            "type": "boolean",
+            "title": "Has Position",
+            "default": false
+          },
+          "provisional_quote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvisionalQuoteInput-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AnalysisRequest"
+      },
+      "AnalysisSnapshot": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "bar_status": {
+            "$ref": "#/components/schemas/SignalStatus"
+          },
+          "engine_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Engine Version"
+          },
+          "config_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Config Version"
+          },
+          "data_lineage": {
+            "items": {
+              "$ref": "#/components/schemas/DataLineage"
+            },
+            "type": "array",
+            "title": "Data Lineage"
+          },
+          "market_regime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketRegimeContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sector_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SectorOpportunity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pair_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PairCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "component_scores": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreComponent"
+            },
+            "type": "array",
+            "title": "Component Scores"
+          },
+          "evidence_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Evidence Score"
+          },
+          "action": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "key_levels": {
+            "items": {
+              "$ref": "#/components/schemas/KeyLevel"
+            },
+            "type": "array",
+            "title": "Key Levels"
+          },
+          "invalidation": {
+            "items": {
+              "$ref": "#/components/schemas/Invalidation"
+            },
+            "type": "array",
+            "title": "Invalidation"
+          },
+          "explanations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Explanations"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "timeframe",
+          "as_of",
+          "bar_status",
+          "engine_version",
+          "config_version",
+          "data_lineage",
+          "component_scores",
+          "evidence_score",
+          "action"
+        ],
+        "title": "AnalysisSnapshot"
+      },
+      "AssetType": {
+        "type": "string",
+        "enum": [
+          "stock",
+          "etf",
+          "index",
+          "sector_index",
+          "fund",
+          "futures",
+          "fx",
+          "unknown"
+        ],
+        "title": "AssetType"
+      },
+      "Bar": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "open": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Open"
+          },
+          "high": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Low"
+          },
+          "close": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Close"
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Volume"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timestamp",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume"
+        ],
+        "title": "Bar"
+      },
+      "BollingerIndicatorsView": {
+        "properties": {
+          "mid": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "upper": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "lower": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mid",
+          "upper",
+          "lower"
+        ],
+        "title": "BollingerIndicatorsView"
+      },
+      "ChanConfirmedStreamsView": {
+        "properties": {
+          "stableBi": {
+            "items": {
+              "$ref": "#/components/schemas/ChanStableBiStateView"
+            },
+            "type": "array",
+            "title": "Stablebi"
+          },
+          "segment": {
+            "items": {
+              "$ref": "#/components/schemas/ChanSegmentStateView"
+            },
+            "type": "array",
+            "title": "Segment"
+          },
+          "sameLevel": {
+            "items": {
+              "$ref": "#/components/schemas/ChanSameLevelStateView"
+            },
+            "type": "array",
+            "title": "Samelevel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stableBi",
+          "segment",
+          "sameLevel"
+        ],
+        "title": "ChanConfirmedStreamsView"
+      },
+      "ChanSameLevelStateView": {
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction"
+          },
+          "startTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Starttime"
+          },
+          "endTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Endtime"
+          },
+          "startPrice": {
+            "type": "number",
+            "title": "Startprice"
+          },
+          "endPrice": {
+            "type": "number",
+            "title": "Endprice"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "confirmedTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Confirmedtime"
+          },
+          "basis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Basis"
+          },
+          "structureId": {
+            "type": "string",
+            "pattern": "^chan-(?:stable-bi|segment|same-level)-[0-9a-f]{20}$",
+            "title": "Structureid"
+          },
+          "validationBasis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Validationbasis"
+          },
+          "validated": {
+            "type": "boolean",
+            "const": true,
+            "title": "Validated"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          },
+          "status": {
+            "type": "string",
+            "const": "confirmed",
+            "title": "Status"
+          },
+          "kind": {
+            "type": "string",
+            "const": "same_level",
+            "title": "Kind"
+          },
+          "type": {
+            "type": "string",
+            "const": "same_level_trend_leg",
+            "title": "Type"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Level"
+          },
+          "segmentCount": {
+            "type": "integer",
+            "minimum": 3.0,
+            "title": "Segmentcount"
+          },
+          "childStructureIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Childstructureids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "direction",
+          "startTime",
+          "endTime",
+          "startPrice",
+          "endPrice",
+          "high",
+          "low",
+          "confirmedTime",
+          "basis",
+          "structureId",
+          "validationBasis",
+          "validated",
+          "confirmed",
+          "status",
+          "kind",
+          "type",
+          "level",
+          "segmentCount",
+          "childStructureIds"
+        ],
+        "title": "ChanSameLevelStateView"
+      },
+      "ChanSegmentStateView": {
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction"
+          },
+          "startTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Starttime"
+          },
+          "endTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Endtime"
+          },
+          "startPrice": {
+            "type": "number",
+            "title": "Startprice"
+          },
+          "endPrice": {
+            "type": "number",
+            "title": "Endprice"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "confirmedTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Confirmedtime"
+          },
+          "basis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Basis"
+          },
+          "structureId": {
+            "type": "string",
+            "pattern": "^chan-(?:stable-bi|segment|same-level)-[0-9a-f]{20}$",
+            "title": "Structureid"
+          },
+          "validationBasis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Validationbasis"
+          },
+          "validated": {
+            "type": "boolean",
+            "const": true,
+            "title": "Validated"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          },
+          "status": {
+            "type": "string",
+            "const": "confirmed",
+            "title": "Status"
+          },
+          "kind": {
+            "type": "string",
+            "const": "segment",
+            "title": "Kind"
+          },
+          "strokeCount": {
+            "type": "integer",
+            "minimum": 3.0,
+            "title": "Strokecount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "direction",
+          "startTime",
+          "endTime",
+          "startPrice",
+          "endPrice",
+          "high",
+          "low",
+          "confirmedTime",
+          "basis",
+          "structureId",
+          "validationBasis",
+          "validated",
+          "confirmed",
+          "status",
+          "kind",
+          "strokeCount"
+        ],
+        "title": "ChanSegmentStateView"
+      },
+      "ChanStableBiStateView": {
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction"
+          },
+          "startTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Starttime"
+          },
+          "endTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Endtime"
+          },
+          "startPrice": {
+            "type": "number",
+            "title": "Startprice"
+          },
+          "endPrice": {
+            "type": "number",
+            "title": "Endprice"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "confirmedTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Confirmedtime"
+          },
+          "basis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Basis"
+          },
+          "structureId": {
+            "type": "string",
+            "pattern": "^chan-(?:stable-bi|segment|same-level)-[0-9a-f]{20}$",
+            "title": "Structureid"
+          },
+          "validationBasis": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Validationbasis"
+          },
+          "validated": {
+            "type": "boolean",
+            "const": true,
+            "title": "Validated"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          },
+          "status": {
+            "type": "string",
+            "const": "confirmed",
+            "title": "Status"
+          },
+          "kind": {
+            "type": "string",
+            "const": "stable_bi",
+            "title": "Kind"
+          },
+          "endpointConfirmedTime": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Endpointconfirmedtime"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "direction",
+          "startTime",
+          "endTime",
+          "startPrice",
+          "endPrice",
+          "high",
+          "low",
+          "confirmedTime",
+          "basis",
+          "structureId",
+          "validationBasis",
+          "validated",
+          "confirmed",
+          "status",
+          "kind",
+          "endpointConfirmedTime"
+        ],
+        "title": "ChanStableBiStateView"
+      },
+      "ChanStateView": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "chan-state-1",
+            "title": "Version"
+          },
+          "methodVersion": {
+            "type": "string",
+            "const": "chan-local-3",
+            "title": "Methodversion"
+          },
+          "reliabilityVersion": {
+            "type": "string",
+            "const": "chan-reliability-1",
+            "title": "Reliabilityversion"
+          },
+          "stateKey": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Statekey"
+          },
+          "originTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origintime"
+          },
+          "lastInputTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastinputtime"
+          },
+          "continuityStatus": {
+            "type": "string",
+            "enum": [
+              "initialized",
+              "continued",
+              "invalid_prior_rejected",
+              "conflict_prior_rejected"
+            ],
+            "title": "Continuitystatus"
+          },
+          "prefixStable": {
+            "type": "boolean",
+            "title": "Prefixstable"
+          },
+          "persistenceEligible": {
+            "type": "boolean",
+            "const": true,
+            "title": "Persistenceeligible"
+          },
+          "confirmedStreams": {
+            "$ref": "#/components/schemas/ChanConfirmedStreamsView"
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^chan-state-[0-9a-f]{20}$",
+            "title": "Contenthash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "methodVersion",
+          "reliabilityVersion",
+          "stateKey",
+          "continuityStatus",
+          "prefixStable",
+          "persistenceEligible",
+          "confirmedStreams",
+          "contentHash"
+        ],
+        "title": "ChanStateView"
+      },
+      "CompositeSignalEvidenceView": {
+        "properties": {
+          "current_signal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Signal"
+          },
+          "strength": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strength"
+          },
+          "recent_buy_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Recent Buy Count"
+          },
+          "recent_sell_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Recent Sell Count"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/CompositeSignalPointView"
+            },
+            "type": "array",
+            "title": "Signals"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "recent_buy_count",
+          "recent_sell_count"
+        ],
+        "title": "CompositeSignalEvidenceView"
+      },
+      "CompositeSignalPointView": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Time"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ],
+            "title": "Kind"
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price"
+          },
+          "strength": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strength"
+          },
+          "confidence_level": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "弱",
+                  "中",
+                  "中强",
+                  "强"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Level"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "confirmations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmations"
+          },
+          "confidence_components": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignalConfidenceComponentsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time",
+          "kind",
+          "price"
+        ],
+        "title": "CompositeSignalPointView"
+      },
+      "CoreIndicatorProfileView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "const": "legacy-core",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "const": "1.0.0",
+            "title": "Version"
+          },
+          "formula_source": {
+            "type": "string",
+            "const": "modules.technical.add_all_indicators",
+            "title": "Formula Source"
+          },
+          "ema_periods": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Ema Periods"
+          },
+          "macd_fast": {
+            "type": "integer",
+            "title": "Macd Fast"
+          },
+          "macd_slow": {
+            "type": "integer",
+            "title": "Macd Slow"
+          },
+          "macd_signal": {
+            "type": "integer",
+            "title": "Macd Signal"
+          },
+          "bollinger_period": {
+            "type": "integer",
+            "title": "Bollinger Period"
+          },
+          "bollinger_std_dev": {
+            "type": "number",
+            "title": "Bollinger Std Dev"
+          },
+          "kdj_n": {
+            "type": "integer",
+            "title": "Kdj N"
+          },
+          "kdj_m1": {
+            "type": "integer",
+            "title": "Kdj M1"
+          },
+          "kdj_m2": {
+            "type": "integer",
+            "title": "Kdj M2"
+          },
+          "rsi_period": {
+            "type": "integer",
+            "title": "Rsi Period"
+          },
+          "atr_period": {
+            "type": "integer",
+            "title": "Atr Period"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "formula_source",
+          "ema_periods",
+          "macd_fast",
+          "macd_slow",
+          "macd_signal",
+          "bollinger_period",
+          "bollinger_std_dev",
+          "kdj_n",
+          "kdj_m1",
+          "kdj_m2",
+          "rsi_period",
+          "atr_period"
+        ],
+        "title": "CoreIndicatorProfileView"
+      },
+      "CoreIndicatorsView": {
+        "properties": {
+          "ema": {
+            "$ref": "#/components/schemas/EmaIndicatorsView"
+          },
+          "macd": {
+            "$ref": "#/components/schemas/MacdIndicatorsView"
+          },
+          "bollinger": {
+            "$ref": "#/components/schemas/BollingerIndicatorsView"
+          },
+          "kdj": {
+            "$ref": "#/components/schemas/KdjIndicatorsView"
+          },
+          "rsi": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "atr": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ema",
+          "macd",
+          "bollinger",
+          "kdj",
+          "rsi",
+          "atr"
+        ],
+        "title": "CoreIndicatorsView"
+      },
+      "DataEnvelope": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "type": "array",
+            "title": "Bars"
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "last_bar_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Bar At"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic",
+            "default": false
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Chain"
+          },
+          "calendar_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Snapshot Id"
+          },
+          "calendar_content_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Content Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "timeframe",
+          "purpose",
+          "bars",
+          "provider",
+          "mode",
+          "quality",
+          "as_of",
+          "fetched_at",
+          "timezone",
+          "adjustment",
+          "freshness_seconds"
+        ],
+        "title": "DataEnvelope"
+      },
+      "DataLineage": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "last_bar_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Bar At"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Chain"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "mode",
+          "fetched_at",
+          "adjustment"
+        ],
+        "title": "DataLineage"
+      },
+      "DataMode": {
+        "type": "string",
+        "enum": [
+          "live",
+          "delayed",
+          "cache",
+          "fallback",
+          "demo"
+        ],
+        "title": "DataMode"
+      },
+      "DataPurpose": {
+        "type": "string",
+        "enum": [
+          "research",
+          "screener",
+          "alert",
+          "report",
+          "backtest",
+          "demo"
+        ],
+        "title": "DataPurpose"
+      },
+      "DataQuery": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose",
+            "default": "research"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment",
+            "default": "forward"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "timeframe"
+        ],
+        "title": "DataQuery"
+      },
+      "DecisionAction": {
+        "type": "string",
+        "enum": [
+          "long",
+          "hold",
+          "reduce",
+          "exit",
+          "cash"
+        ],
+        "title": "DecisionAction"
+      },
+      "DivergenceEvidenceView": {
+        "properties": {
+          "active_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Active Count"
+          },
+          "bullish_active": {
+            "type": "boolean",
+            "title": "Bullish Active"
+          },
+          "bearish_active": {
+            "type": "boolean",
+            "title": "Bearish Active"
+          },
+          "strongest_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strongest Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "active_count",
+          "bullish_active",
+          "bearish_active"
+        ],
+        "title": "DivergenceEvidenceView"
+      },
+      "EmaIndicatorsView": {
+        "properties": {
+          "ema8": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema13": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema21": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema55": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema144": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema169": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema288": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "ema338": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ema8",
+          "ema13",
+          "ema21",
+          "ema55",
+          "ema144",
+          "ema169",
+          "ema288",
+          "ema338"
+        ],
+        "title": "EmaIndicatorsView"
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable",
+            "default": false
+          },
+          "validation": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            },
+            "type": "array",
+            "title": "Validation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Exchange": {
+        "type": "string",
+        "enum": [
+          "SSE",
+          "SZSE",
+          "BSE",
+          "HKEX",
+          "NASDAQ",
+          "NYSE",
+          "AMEX",
+          "OTHER"
+        ],
+        "title": "Exchange"
+      },
+      "FundamentalCoverageView": {
+        "properties": {
+          "required_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Required Fields"
+          },
+          "verified_financial_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verified Financial Fields"
+          },
+          "missing_required_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Required Fields"
+          },
+          "minimum_verified_financial_fields": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Minimum Verified Financial Fields"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "required_fields",
+          "verified_financial_fields",
+          "missing_required_fields",
+          "minimum_verified_financial_fields",
+          "passed"
+        ],
+        "title": "FundamentalCoverageView"
+      },
+      "FundamentalEnvelopeView": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "data_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Time"
+          },
+          "data_time_basis": {
+            "type": "string",
+            "const": "latest_field_evidence_time",
+            "title": "Data Time Basis"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FundamentalFieldView"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Fields"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Source Chain"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "purpose",
+          "provider",
+          "mode",
+          "quality",
+          "as_of",
+          "fetched_at",
+          "data_time",
+          "data_time_basis",
+          "timezone",
+          "currency",
+          "freshness_seconds",
+          "fields",
+          "warnings",
+          "is_synthetic",
+          "source_chain",
+          "request_id"
+        ],
+        "title": "FundamentalEnvelopeView"
+      },
+      "FundamentalEvidenceBasis": {
+        "type": "string",
+        "enum": [
+          "market_snapshot",
+          "financial_statement",
+          "derived_financial_statement",
+          "provider_metadata"
+        ],
+        "title": "FundamentalEvidenceBasis"
+      },
+      "FundamentalFieldStatus": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "unverified"
+        ],
+        "title": "FundamentalFieldStatus"
+      },
+      "FundamentalFieldView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "source_field": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Source Field"
+          },
+          "raw_value": {
+            "$ref": "#/components/schemas/FundamentalRawValueView"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/FundamentalEvidenceBasis"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FundamentalFieldStatus"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "market_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Time"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "source_field",
+          "raw_value",
+          "normalized_value",
+          "basis",
+          "status"
+        ],
+        "title": "FundamentalFieldView"
+      },
+      "FundamentalQuery": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose",
+            "default": "research"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "max_market_age_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Market Age Seconds",
+            "default": 604800
+          },
+          "max_financial_age_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Financial Age Seconds",
+            "default": 17280000
+          },
+          "required_filter_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Filter Fields",
+            "default": [
+              "ROE",
+              "debt_ratio"
+            ]
+          },
+          "minimum_verified_financial_fields": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Minimum Verified Financial Fields",
+            "default": 2
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument"
+        ],
+        "title": "FundamentalQuery",
+        "description": "Point-in-time request for a provider-backed fundamental snapshot."
+      },
+      "FundamentalRawEntryView": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "value": {
+            "$ref": "#/components/schemas/FundamentalRawValueView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "FundamentalRawEntryView"
+      },
+      "FundamentalRawValueView": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "array",
+              "object"
+            ],
+            "title": "Kind"
+          },
+          "string_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "String Value"
+          },
+          "integer_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Integer Value"
+          },
+          "number_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Value"
+          },
+          "boolean_value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boolean Value"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FundamentalRawValueView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/FundamentalRawEntryView"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "FundamentalRawValueView",
+        "description": "Lossless tagged JSON evidence without an open-ended object schema."
+      },
+      "FundamentalSnapshotRequest": {
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/FundamentalQuery"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "FundamentalSnapshotRequest"
+      },
+      "FundamentalSnapshotResponse": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Snapshot Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "engine_version": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Engine Version"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FundamentalEnvelopeView"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/FundamentalCoverageView"
+          },
+          "use_case": {
+            "type": "string",
+            "const": "risk_and_quality_filter",
+            "title": "Use Case"
+          },
+          "formal_use_eligible": {
+            "type": "boolean",
+            "title": "Formal Use Eligible"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "instrument",
+          "purpose",
+          "as_of",
+          "engine_version",
+          "data",
+          "coverage",
+          "use_case",
+          "formal_use_eligible"
+        ],
+        "title": "FundamentalSnapshotResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "const": "custom-model-api",
+            "title": "Service",
+            "default": "custom-model-api"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1",
+            "title": "Api Version",
+            "default": "v1"
+          },
+          "analysis_ready": {
+            "type": "boolean",
+            "title": "Analysis Ready"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderHealthInfo"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/WorkerHealthInfo"
+          },
+          "composition_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Composition Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "analysis_ready"
+        ],
+        "title": "HealthResponse"
+      },
+      "IndicatorPointView": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timestamp",
+          "value"
+        ],
+        "title": "IndicatorPointView"
+      },
+      "IndicatorSeriesView": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/IndicatorPointView"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "title": "IndicatorSeriesView"
+      },
+      "InstrumentId": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Symbol"
+          },
+          "exchange": {
+            "$ref": "#/components/schemas/Exchange"
+          },
+          "market": {
+            "$ref": "#/components/schemas/Market"
+          },
+          "asset_type": {
+            "$ref": "#/components/schemas/AssetType"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "CNY"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "symbol",
+          "exchange",
+          "market",
+          "asset_type"
+        ],
+        "title": "InstrumentId"
+      },
+      "InstrumentSearchItem": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "legacy_code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Legacy Code"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Source"
+          },
+          "match_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Match Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "display_name",
+          "legacy_code",
+          "source",
+          "match_score"
+        ],
+        "title": "InstrumentSearchItem"
+      },
+      "InstrumentSearchResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InstrumentSearchItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "items"
+        ],
+        "title": "InstrumentSearchResponse"
+      },
+      "Invalidation": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "confirmation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Confirmation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description",
+          "confirmation"
+        ],
+        "title": "Invalidation"
+      },
+      "JsonValue": {},
+      "KdjIndicatorsView": {
+        "properties": {
+          "k": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "d": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "j": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "k",
+          "d",
+          "j"
+        ],
+        "title": "KdjIndicatorsView"
+      },
+      "KeyLevel": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Kind"
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price"
+          },
+          "provenance": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Provenance"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SignalStatus",
+            "default": "provisional"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "price",
+          "provenance"
+        ],
+        "title": "KeyLevel"
+      },
+      "MacdIndicatorsView": {
+        "properties": {
+          "dif": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "dea": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          },
+          "hist": {
+            "$ref": "#/components/schemas/IndicatorSeriesView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dif",
+          "dea",
+          "hist"
+        ],
+        "title": "MacdIndicatorsView"
+      },
+      "Market": {
+        "type": "string",
+        "enum": [
+          "CN",
+          "HK",
+          "US",
+          "GLOBAL"
+        ],
+        "title": "Market"
+      },
+      "MarketBarsView": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "market-bars-view/v1",
+            "title": "Schema Version"
+          },
+          "data_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Data Fingerprint"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DataEnvelope"
+          },
+          "indicator_profile": {
+            "$ref": "#/components/schemas/CoreIndicatorProfileView"
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/CoreIndicatorsView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "data_fingerprint",
+          "data",
+          "indicator_profile",
+          "indicators"
+        ],
+        "title": "MarketBarsView"
+      },
+      "MarketRegimeContext": {
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/MarketRegimeState"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "benchmark": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "score",
+          "benchmark",
+          "as_of"
+        ],
+        "title": "MarketRegimeContext"
+      },
+      "MarketRegimeState": {
+        "type": "string",
+        "enum": [
+          "risk_on",
+          "neutral",
+          "risk_off",
+          "unknown"
+        ],
+        "title": "MarketRegimeState"
+      },
+      "MultiTimeframeEvidenceView": {
+        "properties": {
+          "alignment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alignment"
+          },
+          "dominant_trend": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dominant Trend"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "alignment_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alignment Score"
+          },
+          "mtf_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": -2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mtf Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MultiTimeframeEvidenceView"
+      },
+      "PairCandidate": {
+        "properties": {
+          "etf": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "leader": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "trend_aligned": {
+            "type": "boolean",
+            "title": "Trend Aligned"
+          },
+          "liquidity_passed": {
+            "type": "boolean",
+            "title": "Liquidity Passed"
+          },
+          "capacity_passed": {
+            "type": "boolean",
+            "title": "Capacity Passed"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "etf",
+          "leader",
+          "score",
+          "trend_aligned",
+          "liquidity_passed",
+          "capacity_passed"
+        ],
+        "title": "PairCandidate"
+      },
+      "ProviderHealthInfo": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "healthy": {
+            "type": "boolean",
+            "title": "Healthy"
+          },
+          "production_ready": {
+            "type": "boolean",
+            "title": "Production Ready"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "healthy",
+          "production_ready",
+          "checked_at"
+        ],
+        "title": "ProviderHealthInfo"
+      },
+      "ProvisionalQuoteInput-Input": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "temporal_mode": {
+            "$ref": "#/components/schemas/QuoteTemporalMode"
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "data_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Time"
+          },
+          "provider_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Provider Updated At"
+          },
+          "data_time_basis": {
+            "type": "string",
+            "enum": [
+              "provider_timestamp",
+              "cn_midday_close",
+              "cn_session_close",
+              "cn_prior_session_close"
+            ],
+            "title": "Data Time Basis"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "session_status": {
+            "$ref": "#/components/schemas/QuoteSessionStatus"
+          },
+          "trade_status_code": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trade Status Code"
+          },
+          "trade_status_verified": {
+            "type": "boolean",
+            "title": "Trade Status Verified"
+          },
+          "last_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Last Price"
+          },
+          "previous_close": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Previous Close"
+          },
+          "open": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Open"
+          },
+          "high": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Low"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "change_percent": {
+            "type": "number",
+            "title": "Change Percent"
+          },
+          "volume_lots": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Volume Lots"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount"
+          },
+          "turnover_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnover Rate"
+          },
+          "amplitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amplitude"
+          },
+          "pe_dynamic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pe Dynamic"
+          },
+          "pb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pb"
+          },
+          "total_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Market Cap"
+          },
+          "float_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Float Market Cap"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Source Chain"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "calendar_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Snapshot Id"
+          },
+          "calendar_content_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Content Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "purpose",
+          "display_name",
+          "provider",
+          "mode",
+          "quality",
+          "temporal_mode",
+          "requested_at",
+          "as_of",
+          "fetched_at",
+          "data_time",
+          "provider_updated_at",
+          "data_time_basis",
+          "timezone",
+          "currency",
+          "freshness_seconds",
+          "session_status",
+          "trade_status_code",
+          "trade_status_verified",
+          "last_price",
+          "previous_close",
+          "open",
+          "high",
+          "low",
+          "change",
+          "change_percent",
+          "volume_lots",
+          "amount",
+          "is_synthetic",
+          "source_chain"
+        ],
+        "title": "ProvisionalQuoteInput",
+        "description": "Native quote echoed by the browser for advisory-only signal preview."
+      },
+      "ProvisionalQuoteInput-Output": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "temporal_mode": {
+            "$ref": "#/components/schemas/QuoteTemporalMode"
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "data_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Time"
+          },
+          "provider_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Provider Updated At"
+          },
+          "data_time_basis": {
+            "type": "string",
+            "enum": [
+              "provider_timestamp",
+              "cn_midday_close",
+              "cn_session_close",
+              "cn_prior_session_close"
+            ],
+            "title": "Data Time Basis"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "session_status": {
+            "$ref": "#/components/schemas/QuoteSessionStatus"
+          },
+          "trade_status_code": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trade Status Code"
+          },
+          "trade_status_verified": {
+            "type": "boolean",
+            "title": "Trade Status Verified"
+          },
+          "last_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Last Price"
+          },
+          "previous_close": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Previous Close"
+          },
+          "open": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Open"
+          },
+          "high": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Low"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "change_percent": {
+            "type": "number",
+            "title": "Change Percent"
+          },
+          "volume_lots": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Volume Lots"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount"
+          },
+          "turnover_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnover Rate"
+          },
+          "amplitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amplitude"
+          },
+          "pe_dynamic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pe Dynamic"
+          },
+          "pb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pb"
+          },
+          "total_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Market Cap"
+          },
+          "float_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Float Market Cap"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Source Chain"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "calendar_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Snapshot Id"
+          },
+          "calendar_content_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Content Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "purpose",
+          "display_name",
+          "provider",
+          "mode",
+          "quality",
+          "temporal_mode",
+          "requested_at",
+          "as_of",
+          "fetched_at",
+          "data_time",
+          "provider_updated_at",
+          "data_time_basis",
+          "timezone",
+          "currency",
+          "freshness_seconds",
+          "session_status",
+          "trade_status_code",
+          "trade_status_verified",
+          "last_price",
+          "previous_close",
+          "open",
+          "high",
+          "low",
+          "change",
+          "change_percent",
+          "volume_lots",
+          "amount",
+          "is_synthetic",
+          "source_chain"
+        ],
+        "title": "ProvisionalQuoteInput",
+        "description": "Native quote echoed by the browser for advisory-only signal preview."
+      },
+      "QualityStatus": {
+        "type": "string",
+        "enum": [
+          "valid",
+          "stale",
+          "partial",
+          "unavailable"
+        ],
+        "title": "QualityStatus"
+      },
+      "QuoteEnvelope": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "temporal_mode": {
+            "$ref": "#/components/schemas/QuoteTemporalMode"
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "data_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Time"
+          },
+          "provider_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Provider Updated At"
+          },
+          "data_time_basis": {
+            "type": "string",
+            "enum": [
+              "provider_timestamp",
+              "cn_midday_close",
+              "cn_session_close",
+              "cn_prior_session_close"
+            ],
+            "title": "Data Time Basis"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "session_status": {
+            "$ref": "#/components/schemas/QuoteSessionStatus"
+          },
+          "trade_status_code": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trade Status Code"
+          },
+          "trade_status_verified": {
+            "type": "boolean",
+            "title": "Trade Status Verified"
+          },
+          "last_price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Last Price"
+          },
+          "previous_close": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Previous Close"
+          },
+          "open": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Open"
+          },
+          "high": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "High"
+          },
+          "low": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Low"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "change_percent": {
+            "type": "number",
+            "title": "Change Percent"
+          },
+          "volume_lots": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Volume Lots"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount"
+          },
+          "turnover_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnover Rate"
+          },
+          "amplitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amplitude"
+          },
+          "pe_dynamic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pe Dynamic"
+          },
+          "pb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pb"
+          },
+          "total_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Market Cap"
+          },
+          "float_market_cap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Float Market Cap"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Source Chain"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "calendar_snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Snapshot Id"
+          },
+          "calendar_content_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calendar Content Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "purpose",
+          "display_name",
+          "provider",
+          "mode",
+          "quality",
+          "temporal_mode",
+          "requested_at",
+          "as_of",
+          "fetched_at",
+          "data_time",
+          "provider_updated_at",
+          "data_time_basis",
+          "timezone",
+          "currency",
+          "freshness_seconds",
+          "session_status",
+          "trade_status_code",
+          "trade_status_verified",
+          "last_price",
+          "previous_close",
+          "open",
+          "high",
+          "low",
+          "change",
+          "change_percent",
+          "volume_lots",
+          "amount",
+          "is_synthetic",
+          "source_chain"
+        ],
+        "title": "QuoteEnvelope",
+        "description": "One native quote plus explicit source, time and admission evidence."
+      },
+      "QuoteQuery": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose",
+            "default": "research"
+          },
+          "temporal_mode": {
+            "$ref": "#/components/schemas/QuoteTemporalMode",
+            "default": "exact"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested At"
+          },
+          "max_live_age_seconds": {
+            "type": "number",
+            "maximum": 900.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Live Age Seconds",
+            "default": 90.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument"
+        ],
+        "title": "QuoteQuery",
+        "description": "Explicit temporal request for a native provider quote snapshot."
+      },
+      "QuoteRefreshRequest": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument"
+        ],
+        "title": "QuoteRefreshRequest"
+      },
+      "QuoteRefreshResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "quote-refresh/v1",
+            "title": "Schema Version",
+            "default": "quote-refresh/v1"
+          },
+          "quote": {
+            "$ref": "#/components/schemas/QuoteEnvelope"
+          },
+          "provider_unchanged": {
+            "type": "boolean",
+            "title": "Provider Unchanged"
+          },
+          "cooldown_seconds": {
+            "type": "integer",
+            "maximum": 3600.0,
+            "minimum": 1.0,
+            "title": "Cooldown Seconds"
+          },
+          "origin": {
+            "type": "string",
+            "const": "manual_refresh",
+            "title": "Origin",
+            "default": "manual_refresh"
+          },
+          "cache_bypassed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Cache Bypassed",
+            "default": true
+          },
+          "alert_event_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Alert Event Created",
+            "default": false
+          },
+          "external_notification_sent": {
+            "type": "boolean",
+            "const": false,
+            "title": "External Notification Sent",
+            "default": false
+          },
+          "trade_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Trade Created",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quote",
+          "provider_unchanged",
+          "cooldown_seconds"
+        ],
+        "title": "QuoteRefreshResponse"
+      },
+      "QuoteSessionStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "midday_break",
+          "after_close",
+          "pre_open",
+          "non_trading_day_unverified"
+        ],
+        "title": "QuoteSessionStatus",
+        "description": "Conservative local-session classification for a market snapshot."
+      },
+      "QuoteTemporalMode": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "latest"
+        ],
+        "title": "QuoteTemporalMode",
+        "description": "Whether a quote is an exact point-in-time lookup or a latest snapshot."
+      },
+      "QuoteViewResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "quote-view/v2",
+            "title": "Schema Version"
+          },
+          "quote": {
+            "$ref": "#/components/schemas/QuoteEnvelope"
+          },
+          "formal_use_eligible": {
+            "type": "boolean",
+            "title": "Formal Use Eligible"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "quote",
+          "formal_use_eligible"
+        ],
+        "title": "QuoteViewResponse"
+      },
+      "RealtimeAnalysisBaselineView": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Snapshot Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "completed_through": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed Through"
+          },
+          "evidence_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Evidence Score"
+          },
+          "score_semantics": {
+            "type": "string",
+            "const": "evidence_score_not_probability",
+            "title": "Score Semantics"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "snapshot_id",
+          "instrument",
+          "timeframe",
+          "as_of",
+          "completed_through",
+          "evidence_score",
+          "score_semantics",
+          "provider",
+          "mode",
+          "quality",
+          "adjustment"
+        ],
+        "title": "RealtimeAnalysisBaselineView"
+      },
+      "RealtimeAnalysisPreviewRequest": {
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/DataQuery"
+          },
+          "benchmark_query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataQuery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "has_position": {
+            "type": "boolean",
+            "title": "Has Position",
+            "default": false
+          },
+          "provisional_quote": {
+            "$ref": "#/components/schemas/ProvisionalQuoteInput-Input"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "provisional_quote"
+        ],
+        "title": "RealtimeAnalysisPreviewRequest",
+        "description": "A full provisional analysis request bound to one latest native quote."
+      },
+      "RealtimeAnalysisPreviewResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "realtime-analysis-preview/v1",
+            "title": "Schema Version"
+          },
+          "advisory_only": {
+            "type": "boolean",
+            "const": true,
+            "title": "Advisory Only"
+          },
+          "formal_use_eligible": {
+            "type": "boolean",
+            "const": false,
+            "title": "Formal Use Eligible"
+          },
+          "session_label": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Session Label"
+          },
+          "quote": {
+            "$ref": "#/components/schemas/ProvisionalQuoteInput-Output"
+          },
+          "completed_baseline": {
+            "$ref": "#/components/schemas/RealtimeAnalysisBaselineView"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/ResearchAnalysisResponse"
+          },
+          "structure_data_ref": {
+            "$ref": "#/components/schemas/TechnicalStructureDataReferenceView"
+          },
+          "structure_data_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Structure Data Fingerprint"
+          },
+          "structure_engine": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Structure Engine"
+          },
+          "structures": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionsView"
+          },
+          "structure_status": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionStatusView"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "advisory_only",
+          "formal_use_eligible",
+          "session_label",
+          "quote",
+          "completed_baseline",
+          "preview",
+          "structure_data_ref",
+          "structure_data_fingerprint",
+          "structure_engine",
+          "structures",
+          "structure_status",
+          "warnings"
+        ],
+        "title": "RealtimeAnalysisPreviewResponse"
+      },
+      "RealtimeSignalPreviewView": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "realtime-signal-preview/v1",
+            "title": "Schema Version"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "status": {
+            "type": "string",
+            "const": "provisional",
+            "title": "Status"
+          },
+          "bar_time": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Bar Time"
+          },
+          "completed_through": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed Through"
+          },
+          "daily_request_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Daily Request Id"
+          },
+          "quote_request_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Quote Request Id"
+          },
+          "daily_provider": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Daily Provider"
+          },
+          "quote_provider": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Quote Provider"
+          },
+          "quote_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "delayed"
+            ],
+            "title": "Quote Mode"
+          },
+          "quote_quality": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "stale"
+            ],
+            "title": "Quote Quality"
+          },
+          "score_semantics": {
+            "type": "string",
+            "const": "signal_evidence_score_not_probability",
+            "title": "Score Semantics"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/CompositeSignalPointView"
+            },
+            "type": "array",
+            "title": "Signals"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "advisory_only": {
+            "type": "boolean",
+            "const": true,
+            "title": "Advisory Only"
+          },
+          "formal_use_eligible": {
+            "type": "boolean",
+            "const": false,
+            "title": "Formal Use Eligible"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "available",
+          "status",
+          "bar_time",
+          "completed_through",
+          "daily_request_id",
+          "quote_request_id",
+          "daily_provider",
+          "quote_provider",
+          "quote_mode",
+          "quote_quality",
+          "score_semantics",
+          "advisory_only",
+          "formal_use_eligible"
+        ],
+        "title": "RealtimeSignalPreviewView"
+      },
+      "ResearchAnalysisResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "research-view/v1",
+            "title": "Schema Version"
+          },
+          "data_ref": {
+            "$ref": "#/components/schemas/ResearchDataReferenceView"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AnalysisSnapshot"
+          },
+          "market_view": {
+            "$ref": "#/components/schemas/MarketBarsView"
+          },
+          "technical_summary": {
+            "$ref": "#/components/schemas/TechnicalSummaryView"
+          },
+          "section_status": {
+            "$ref": "#/components/schemas/ResearchSectionStatusView"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "realtime_signal_preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealtimeSignalPreviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "data_ref",
+          "snapshot",
+          "market_view",
+          "technical_summary",
+          "section_status",
+          "warnings"
+        ],
+        "title": "ResearchAnalysisResponse"
+      },
+      "ResearchDataReferenceView": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment"
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "last_bar_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Bar At"
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Chain"
+          },
+          "source_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Warnings"
+          },
+          "bar_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Bar Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "instrument",
+          "timeframe",
+          "purpose",
+          "adjustment",
+          "provider",
+          "mode",
+          "quality",
+          "as_of",
+          "fetched_at",
+          "last_bar_at",
+          "timezone",
+          "freshness_seconds",
+          "is_synthetic",
+          "source_chain",
+          "source_warnings",
+          "bar_count"
+        ],
+        "title": "ResearchDataReferenceView"
+      },
+      "ResearchSectionStatusView": {
+        "properties": {
+          "data_ref": {
+            "type": "string",
+            "const": "available",
+            "title": "Data Ref"
+          },
+          "snapshot": {
+            "type": "string",
+            "const": "available",
+            "title": "Snapshot"
+          },
+          "market_view": {
+            "type": "string",
+            "const": "available",
+            "title": "Market View"
+          },
+          "technical_summary": {
+            "type": "string",
+            "enum": [
+              "available",
+              "partial",
+              "unavailable"
+            ],
+            "title": "Technical Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_ref",
+          "snapshot",
+          "market_view",
+          "technical_summary"
+        ],
+        "title": "ResearchSectionStatusView"
+      },
+      "ScoreComponent": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Weight"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "score",
+          "weight"
+        ],
+        "title": "ScoreComponent"
+      },
+      "SectionAvailability": {
+        "type": "string",
+        "enum": [
+          "available",
+          "partial",
+          "unavailable"
+        ],
+        "title": "SectionAvailability"
+      },
+      "SectorOpportunity": {
+        "properties": {
+          "sector_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sector Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "trend": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Trend"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "support": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support"
+          },
+          "resistance": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resistance"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sector_id",
+          "name",
+          "score",
+          "trend",
+          "eligible"
+        ],
+        "title": "SectorOpportunity"
+      },
+      "SignalConfidenceComponentsView": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "signal-evidence-v2",
+            "title": "Version"
+          },
+          "semantics": {
+            "type": "string",
+            "const": "signal_evidence_score_not_probability",
+            "title": "Semantics"
+          },
+          "independent_bucket_count": {
+            "type": "integer",
+            "minimum": 2.0,
+            "title": "Independent Bucket Count"
+          },
+          "bucket_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Bucket Score"
+          },
+          "directional_trend_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Directional Trend Score"
+          },
+          "trend_evidence_status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "insufficient_history"
+            ],
+            "title": "Trend Evidence Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "semantics",
+          "independent_bucket_count",
+          "bucket_score",
+          "directional_trend_score",
+          "trend_evidence_status"
+        ],
+        "title": "SignalConfidenceComponentsView"
+      },
+      "SignalStatus": {
+        "type": "string",
+        "enum": [
+          "provisional",
+          "confirmed"
+        ],
+        "title": "SignalStatus"
+      },
+      "StructurePointView": {
+        "properties": {
+          "time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "StructurePointView"
+      },
+      "TechnicalStructureDataReferenceView": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "timeframe": {
+            "$ref": "#/components/schemas/Timeframe"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/DataPurpose"
+          },
+          "adjustment": {
+            "$ref": "#/components/schemas/Adjustment"
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Provider"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DataMode"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityStatus"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "last_bar_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Bar At"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "freshness_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Freshness Seconds"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "source_chain": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Chain"
+          },
+          "lineage_request_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lineage Request Ids"
+          },
+          "bar_count": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Bar Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "instrument",
+          "timeframe",
+          "purpose",
+          "adjustment",
+          "provider",
+          "mode",
+          "quality",
+          "as_of",
+          "fetched_at",
+          "last_bar_at",
+          "timezone",
+          "freshness_seconds",
+          "is_synthetic",
+          "source_chain",
+          "lineage_request_ids",
+          "bar_count"
+        ],
+        "title": "TechnicalStructureDataReferenceView"
+      },
+      "TechnicalStructureItemView": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Kind"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Source"
+          },
+          "method_version": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Method Version"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SignalStatus"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed"
+          },
+          "provisional": {
+            "type": "boolean",
+            "title": "Provisional"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "confirmed_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed Time"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "end_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Price"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "reference_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Value"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "neckline_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neckline Price"
+          },
+          "target_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Price"
+          },
+          "stop_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Price"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "score_eligible": {
+            "type": "boolean",
+            "const": false,
+            "title": "Score Eligible",
+            "default": false
+          },
+          "alert_eligible": {
+            "type": "boolean",
+            "const": false,
+            "title": "Alert Eligible",
+            "default": false
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StructurePointView"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "source",
+          "method_version",
+          "status",
+          "confirmed",
+          "provisional",
+          "points",
+          "tags"
+        ],
+        "title": "TechnicalStructureItemView"
+      },
+      "TechnicalStructureRequest": {
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/DataQuery"
+          },
+          "benchmark_query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataQuery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "has_position": {
+            "type": "boolean",
+            "title": "Has Position",
+            "default": false
+          },
+          "provisional_quote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvisionalQuoteInput-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prior_state": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "TechnicalStructureRequest",
+        "description": "Research structure request with optional client-owned Chan continuation."
+      },
+      "TechnicalStructureResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "technical-structure-view/v1",
+            "title": "Schema Version"
+          },
+          "data_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Data Fingerprint"
+          },
+          "data_ref": {
+            "$ref": "#/components/schemas/TechnicalStructureDataReferenceView"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AnalysisSnapshot"
+          },
+          "engine": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Engine"
+          },
+          "engine_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Note"
+          },
+          "sections": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionsView"
+          },
+          "section_status": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionStatusView"
+          },
+          "current_state": {
+            "$ref": "#/components/schemas/ChanStateView"
+          },
+          "continuity": {
+            "type": "string",
+            "enum": [
+              "initialized",
+              "continued",
+              "rejected"
+            ],
+            "title": "Continuity"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "data_fingerprint",
+          "data_ref",
+          "snapshot",
+          "engine",
+          "sections",
+          "section_status",
+          "current_state",
+          "continuity",
+          "warnings"
+        ],
+        "title": "TechnicalStructureResponse"
+      },
+      "TechnicalStructureSectionStatusView": {
+        "properties": {
+          "support_resistance": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "fibonacci": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "gann": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "elliott": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "chan": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "candlestick": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "chart_patterns": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "divergences": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "volume_price": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "multi_timeframe": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "overlay": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "support_resistance",
+          "fibonacci",
+          "gann",
+          "elliott",
+          "chan",
+          "candlestick",
+          "chart_patterns",
+          "divergences",
+          "volume_price",
+          "multi_timeframe",
+          "overlay"
+        ],
+        "title": "TechnicalStructureSectionStatusView"
+      },
+      "TechnicalStructureSectionView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SectionAvailability"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "method_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method Version"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TechnicalStructureItemView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "items",
+          "warnings"
+        ],
+        "title": "TechnicalStructureSectionView"
+      },
+      "TechnicalStructureSectionsView": {
+        "properties": {
+          "support_resistance": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "fibonacci": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "gann": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "elliott": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "chan": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "candlestick": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "chart_patterns": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "divergences": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "volume_price": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "multi_timeframe": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          },
+          "overlay": {
+            "$ref": "#/components/schemas/TechnicalStructureSectionView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "support_resistance",
+          "fibonacci",
+          "gann",
+          "elliott",
+          "chan",
+          "candlestick",
+          "chart_patterns",
+          "divergences",
+          "volume_price",
+          "multi_timeframe",
+          "overlay"
+        ],
+        "title": "TechnicalStructureSectionsView"
+      },
+      "TechnicalSummaryView": {
+        "properties": {
+          "score_semantics": {
+            "type": "string",
+            "const": "evidence_score_not_probability",
+            "title": "Score Semantics"
+          },
+          "trend_strength": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrendStrengthEvidenceView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multi_timeframe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MultiTimeframeEvidenceView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "divergence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DivergenceEvidenceView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "composite_signal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompositeSignalEvidenceView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "legacy_directional_evidence_status": {
+            "type": "string",
+            "enum": [
+              "absent",
+              "present_uncalibrated"
+            ],
+            "title": "Legacy Directional Evidence Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score_semantics",
+          "trend_strength",
+          "multi_timeframe",
+          "divergence",
+          "composite_signal",
+          "legacy_directional_evidence_status"
+        ],
+        "title": "TechnicalSummaryView"
+      },
+      "Timeframe": {
+        "type": "string",
+        "enum": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "1d",
+          "1w",
+          "1mo"
+        ],
+        "title": "Timeframe"
+      },
+      "TrendStrengthEvidenceView": {
+        "properties": {
+          "score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "signal_summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TrendStrengthEvidenceView"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ValidationIssue": {
+        "properties": {
+          "location": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "issue_type": {
+            "type": "string",
+            "title": "Issue Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "message",
+          "issue_type"
+        ],
+        "title": "ValidationIssue"
+      },
+      "WatchlistEntriesReorderRequest": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "securities",
+              "sectors"
+            ],
+            "title": "Scope"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WatchlistRole"
+          },
+          "ordered_items": {
+            "items": {
+              "$ref": "#/components/schemas/WatchlistOrderItemRequest"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ordered Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope",
+          "role",
+          "ordered_items"
+        ],
+        "title": "WatchlistEntriesReorderRequest"
+      },
+      "WatchlistEntryCreateRequest": {
+        "properties": {
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WatchlistRole"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 256,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instrument",
+          "role",
+          "display_name"
+        ],
+        "title": "WatchlistEntryCreateRequest",
+        "description": "Closed configuration request; it performs no market-data side effect."
+      },
+      "WatchlistEntryListResponse": {
+        "properties": {
+          "configuration_only": {
+            "type": "boolean",
+            "const": true,
+            "title": "Configuration Only",
+            "default": true
+          },
+          "monitoring_active": {
+            "type": "boolean",
+            "const": false,
+            "title": "Monitoring Active",
+            "default": false
+          },
+          "alert_rule_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Alert Rule Created",
+            "default": false
+          },
+          "market_data_requested": {
+            "type": "boolean",
+            "const": false,
+            "title": "Market Data Requested",
+            "default": false
+          },
+          "trade_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Trade Created",
+            "default": false
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "schema_version": {
+            "type": "string",
+            "const": "watchlist-list/v1",
+            "title": "Schema Version",
+            "default": "watchlist-list/v1"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WatchlistEntryView"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/WatchlistLimitsView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "WatchlistEntryListResponse"
+      },
+      "WatchlistEntryPatchRequest": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WatchlistRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "WatchlistEntryPatchRequest"
+      },
+      "WatchlistEntryResponse": {
+        "properties": {
+          "configuration_only": {
+            "type": "boolean",
+            "const": true,
+            "title": "Configuration Only",
+            "default": true
+          },
+          "monitoring_active": {
+            "type": "boolean",
+            "const": false,
+            "title": "Monitoring Active",
+            "default": false
+          },
+          "alert_rule_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Alert Rule Created",
+            "default": false
+          },
+          "market_data_requested": {
+            "type": "boolean",
+            "const": false,
+            "title": "Market Data Requested",
+            "default": false
+          },
+          "trade_created": {
+            "type": "boolean",
+            "const": false,
+            "title": "Trade Created",
+            "default": false
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "schema_version": {
+            "type": "string",
+            "const": "watchlist-entry/v1",
+            "title": "Schema Version",
+            "default": "watchlist-entry/v1"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "created",
+              "read",
+              "updated",
+              "deleted"
+            ],
+            "title": "Action"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/WatchlistEntryView"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "entry"
+        ],
+        "title": "WatchlistEntryResponse"
+      },
+      "WatchlistEntryView": {
+        "properties": {
+          "entry_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Entry Id"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/InstrumentId"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WatchlistRole"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 256,
+            "title": "Note"
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned",
+            "default": false
+          },
+          "sort_order": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entry_id",
+          "instrument",
+          "role",
+          "display_name",
+          "note",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
+        "title": "WatchlistEntryView"
+      },
+      "WatchlistLimitsView": {
+        "properties": {
+          "max_core_stocks": {
+            "type": "integer",
+            "const": 10,
+            "title": "Max Core Stocks",
+            "default": 10
+          },
+          "max_active_stocks": {
+            "type": "integer",
+            "const": 30,
+            "title": "Max Active Stocks",
+            "default": 30
+          },
+          "max_active_entries": {
+            "type": "integer",
+            "const": 100,
+            "title": "Max Active Entries",
+            "default": 100
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "WatchlistLimitsView"
+      },
+      "WatchlistOrderItemRequest": {
+        "properties": {
+          "entry_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Entry Id"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entry_id",
+          "expected_revision"
+        ],
+        "title": "WatchlistOrderItemRequest"
+      },
+      "WatchlistRole": {
+        "type": "string",
+        "enum": [
+          "core",
+          "watchlist",
+          "etf",
+          "index"
+        ],
+        "title": "WatchlistRole"
+      },
+      "WorkerHealthInfo": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "online",
+              "stale",
+              "offline"
+            ],
+            "title": "Status"
+          },
+          "heartbeat_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "WorkerHealthInfo"
+      }
+    }
+  }
+}

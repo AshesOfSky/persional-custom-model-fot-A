@@ -1,40 +1,31 @@
-# Python
+# Local secrets, preferences and generated data
+.env
+.env.*
+!.env.example
+runtime/
+cache/
+artifacts/
+data/
+*.db
+*.sqlite*
+*.log
+*.parquet
+*.pdf
+*.png
+*.jpg
+*.jpeg
 __pycache__/
 *.py[cod]
-*.so
+.pytest_cache/
+.venv/
+venv/
 *.egg-info/
+node_modules/
 dist/
 build/
-.eggs/
-
-# Virtual environments
-venv/
-.venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Cache & Database
-cache/
-*.db
-
-# Versions (local backups)
-versions/
-
-# Generated content
-generated_posts/
-
-# Claude / Cowork internals
-.claude/
-.mcp.json
-
-# OS files
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 
-# Logs
-*.log

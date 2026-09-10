@@ -484,11 +484,40 @@ class StockSearchEngine:
                         seen_codes.add(stock.full_code)
                         # API结果给一个基础分，精确匹配加分
                         api_score = 10
-                        if stock.code == keyword_upper or stock.name == keyword:
+                        # Eastmoney prefixes an A-share name with ``XD`` on
+                        # ex-dividend days and may truncate the displayed name
+                        # (for example, ``XD药明康`` for ``药明康德``).  Keep
+                        # the source spelling for display, but normalize only
+                        # this known action marker while scoring the match.
+                        normalized_name = (
+                            stock.name[2:]
+                            if stock.name[:2].upper() == 'XD'
+                            else stock.name
+                        )
+                        normalized_name_lower = normalized_name.lower()
+                        has_action_prefix = normalized_name != stock.name
+                        if (
+                            stock.code == keyword_upper
+                            or stock.name == keyword
+                            or normalized_name_lower == keyword_lower
+                        ):
                             api_score = 95
-                        elif stock.code.startswith(keyword_upper) or stock.name.startswith(keyword):
+                        elif (
+                            stock.code.startswith(keyword_upper)
+                            or stock.name.startswith(keyword)
+                            or normalized_name_lower.startswith(keyword_lower)
+                            or (
+                                has_action_prefix
+                                and normalized_name_lower
+                                and keyword_lower.startswith(normalized_name_lower)
+                            )
+                        ):
                             api_score = 70
-                        elif keyword_lower in stock.code.lower() or keyword in stock.name:
+                        elif (
+                            keyword_lower in stock.code.lower()
+                            or keyword in stock.name
+                            or keyword_lower in normalized_name_lower
+                        ):
                             api_score = 35
                         stock.score = api_score
                         all_results.append(stock)

@@ -7,6 +7,11 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional
 from .technical import adaptive_rsi_thresholds
+from .signal_confidence import (
+    online_trend_strength,
+    score_signal_evidence,
+    signal_evidence_level,
+)
 
 
 # ── 前高前低检测 ──────────────────────────────────────────────────────
@@ -25,19 +30,32 @@ def detect_swing_highs_lows(df: pd.DataFrame, window: int = 10) -> Dict:
     low_arr = df["Low"].values
 
     for i in range(window, len(df) - window):
+        confirmed_index = i + window
+        pivot_date = str(df.index[i].date()) if hasattr(df.index[i], "date") else str(df.index[i])
+        confirmed_date = (
+            str(df.index[confirmed_index].date())
+            if hasattr(df.index[confirmed_index], "date")
+            else str(df.index[confirmed_index])
+        )
         # Swing high: 当前High是左右window内最高
         if high_arr[i] == max(high_arr[i - window:i + window + 1]):
             highs.append({
                 "index": i,
-                "date": str(df.index[i].date()) if hasattr(df.index[i], "date") else str(df.index[i]),
+                "date": pivot_date,
                 "price": float(high_arr[i]),
+                # 枢轴要到右侧 window 根K线走完后才可确认。保留 pivot date
+                # 兼容既有展示，同时显式给出可用于回测/as-of 的确认时点。
+                "confirmed_index": confirmed_index,
+                "confirmed_date": confirmed_date,
             })
         # Swing low: 当前Low是左右window内最低
         if low_arr[i] == min(low_arr[i - window:i + window + 1]):
             lows.append({
                 "index": i,
-                "date": str(df.index[i].date()) if hasattr(df.index[i], "date") else str(df.index[i]),
+                "date": pivot_date,
                 "price": float(low_arr[i]),
+                "confirmed_index": confirmed_index,
+                "confirmed_date": confirmed_date,
             })
 
     return {"swing_highs": highs, "swing_lows": lows}
@@ -57,6 +75,7 @@ BUY_SIGNAL_BUCKETS = {
     "pattern":        ["TD买入信号"],
     "divergence":     ["MACD底背离"],        # v3: 背离作为独立确认桶
     "trend_strength": ["ADX趋势强+多周期看多"],  # v4: 趋势强度确认桶
+    "smart_money":    ["OBV底背离累积"],         # v4: 智能资金流桶
 }
 
 SELL_SIGNAL_BUCKETS = {
@@ -68,6 +87,7 @@ SELL_SIGNAL_BUCKETS = {
     "pattern":        ["TD卖出信号"],
     "divergence":     ["MACD顶背离"],        # v3: 背离作为独立确认桶
     "trend_strength": ["ADX趋势弱+多周期看空"],  # v4: 趋势强度确认桶
+    "smart_money":    ["OBV顶背离派发"],         # v4: 智能资金流桶
 }
 
 
@@ -78,6 +98,32 @@ def aggregate_buckets(confirmations: List[str], buckets: Dict[str, List[str]]) -
         if any(any(sig in conf for sig in signals) for conf in confirmations):
             hit.append(bucket_name)
     return len(hit), hit
+
+
+def _volume_ma5_column(df: pd.DataFrame) -> str | None:
+    if "Vol_MA_5" in df.columns:
+        return "Vol_MA_5"
+    if "Vol_MA5" in df.columns:
+        return "Vol_MA5"
+    return None
+
+
+def _as_of_multi_timeframe_bias(df: pd.DataFrame, i: int) -> str | None:
+    """Approximate weekly/monthly alignment using only data known at bar ``i``."""
+
+    required = ("EMA_21", "EMA_55", "EMA_144")
+    if i < 144 or any(column not in df.columns for column in required):
+        return None
+    ema21 = df["EMA_21"].iloc[i]
+    ema55 = df["EMA_55"].iloc[i]
+    ema144 = df["EMA_144"].iloc[i]
+    if any(pd.isna(value) for value in (ema21, ema55, ema144)):
+        return None
+    if ema21 > ema55 > ema144:
+        return "bullish"
+    if ema21 < ema55 < ema144:
+        return "bearish"
+    return "mixed"
 
 
 def _check_buy_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
@@ -134,15 +180,16 @@ def _check_buy_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
                 break
 
     # 7. 成交量放大
-    if "Volume" in df.columns and "Vol_MA5" in df.columns:
-        if df["Vol_MA5"].iloc[i] > 0 and c["Volume"] > 1.5 * df["Vol_MA5"].iloc[i]:
+    volume_ma5 = _volume_ma5_column(df)
+    if "Volume" in df.columns and volume_ma5 is not None:
+        if df[volume_ma5].iloc[i] > 0 and c["Volume"] > 1.5 * df[volume_ma5].iloc[i]:
             confirmations.append("放量(>1.5xMA5)")
 
     # 8. TD序列买入信号
-    if "TD_setup" in df.columns:
-        if df["TD_setup"].iloc[i] == 9 and df.get("TD_buy_signal") is not None:
-            if i in df.index and df["TD_buy_signal"].iloc[i]:
-                confirmations.append("TD买入信号")
+    if "TD_Signal" in df.columns and df["TD_Signal"].iloc[i] in (1, 2):
+        confirmations.append("TD买入信号")
+    elif "TD_Setup" in df.columns and df["TD_Setup"].iloc[i] == 9:
+        confirmations.append("TD买入信号")
 
     # 9. MACD底背离（价格创新低但MACD柱未创新低）
     if "MACD_hist" in df.columns and i >= 20:
@@ -158,14 +205,7 @@ def _check_buy_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
     if "ADX" in df.columns:
         adx_val = float(df["ADX"].iloc[i])
         if adx_val > 25:  # ADX > 25 表示趋势成立
-            # 多周期看多: 检查周线/月线趋势列（由 calc_multi_timeframe_trend 生成）
-            mtf_bull = True
-            for col in ("weekly_trend", "monthly_trend"):
-                if col in df.columns:
-                    val = df[col].iloc[i]
-                    if pd.notna(val) and float(val) < 0:
-                        mtf_bull = False
-                        break
+            mtf_bull = _as_of_multi_timeframe_bias(df, i) == "bullish"
             # SAR 看多（价格在 SAR 之上）
             sar_bull = True
             if "SAR" in df.columns and pd.notna(df["SAR"].iloc[i]):
@@ -174,6 +214,13 @@ def _check_buy_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
                 _trend_str_buy = True
     if _trend_str_buy:
         confirmations.append("ADX趋势强+多周期看多")
+
+    # 11. v4 OBV smart money: bullish divergence + accumulation regime
+    if "OBV_Divergence" in df.columns and "OBV_Regime" in df.columns:
+        obv_div = int(df["OBV_Divergence"].iloc[i]) if pd.notna(df["OBV_Divergence"].iloc[i]) else 0
+        obv_regime = str(df["OBV_Regime"].iloc[i])
+        if obv_div == 1 or obv_regime == "accumulation":
+            confirmations.append("OBV底背离累积")
 
     return confirmations
 
@@ -232,8 +279,9 @@ def _check_sell_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
                 break
 
     # 7. 缩量上涨（量价背离）
-    if "Volume" in df.columns and "Vol_MA5" in df.columns:
-        if c["Close"] > p["Close"] and df["Vol_MA5"].iloc[i] > 0 and c["Volume"] < 0.7 * df["Vol_MA5"].iloc[i]:
+    volume_ma5 = _volume_ma5_column(df)
+    if "Volume" in df.columns and volume_ma5 is not None:
+        if c["Close"] > p["Close"] and df[volume_ma5].iloc[i] > 0 and c["Volume"] < 0.7 * df[volume_ma5].iloc[i]:
             confirmations.append("缩量上涨(量价背离)")
 
     # 8. TD序列卖出信号（Setup 9 或 Countdown 13）
@@ -266,13 +314,7 @@ def _check_sell_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
         adx_declining = adx_val < adx_prev5 * 0.85 and adx_prev5 > 25
         adx_weak_bear = adx_val < 20
         if adx_declining or adx_weak_bear:
-            mtf_bear = True
-            for col in ("weekly_trend", "monthly_trend"):
-                if col in df.columns:
-                    val = df[col].iloc[i]
-                    if pd.notna(val) and float(val) > 0:
-                        mtf_bear = False
-                        break
+            mtf_bear = _as_of_multi_timeframe_bias(df, i) == "bearish"
             sar_bear = True
             if "SAR" in df.columns and pd.notna(df["SAR"].iloc[i]):
                 sar_bear = float(c["Close"]) < float(df["SAR"].iloc[i])
@@ -280,6 +322,13 @@ def _check_sell_conditions(df: pd.DataFrame, i: int, sr_levels: Dict,
                 _trend_str_sell = True
     if _trend_str_sell:
         confirmations.append("ADX趋势弱+多周期看空")
+
+    # 11. v4 OBV smart money: bearish divergence + distribution regime
+    if "OBV_Divergence" in df.columns and "OBV_Regime" in df.columns:
+        obv_div = int(df["OBV_Divergence"].iloc[i]) if pd.notna(df["OBV_Divergence"].iloc[i]) else 0
+        obv_regime = str(df["OBV_Regime"].iloc[i])
+        if obv_div == -1 or obv_regime == "distribution":
+            confirmations.append("OBV顶背离派发")
 
     return confirmations
 
@@ -310,11 +359,17 @@ def generate_composite_signals(df: pd.DataFrame, analysis: Dict,
     scan_start = max(1, len(df) - 60)
 
     for i in range(scan_start, len(df)):
-        # 买入条件（按"独立桶数"算置信度，避免相关信号被重复计分）
+        # 买入条件：独立桶负责去重和触发，逐 K 趋势分保留连续信息。
         buy_confs = _check_buy_conditions(df, i, sr_levels, rsi_thresholds=rsi_th)
         n_buckets, hit = aggregate_buckets(buy_confs, BUY_SIGNAL_BUCKETS)
         if n_buckets >= 2:
             strength = "强" if n_buckets >= 3 else "中"
+            confidence = score_signal_evidence(
+                independent_bucket_count=n_buckets,
+                trend_strength=online_trend_strength(df, i),
+                direction="buy",
+                trend_evidence_available=i >= 60,
+            )
             buy_signals.append({
                 "bar_index": i,
                 "date": str(df.index[i].date()) if hasattr(df.index[i], "date") else str(df.index[i]),
@@ -322,9 +377,18 @@ def generate_composite_signals(df: pd.DataFrame, analysis: Dict,
                 "close": float(df["Close"].iloc[i]),
                 "type": "buy",
                 "strength": strength,
+                "confidence_level": signal_evidence_level(confidence.score),
                 "confirmations": buy_confs,
                 "buckets": hit,
-                "confidence": min(95, 30 + n_buckets * 14),
+                "confidence": confidence.score,
+                "confidence_components": {
+                    "version": confidence.version,
+                    "semantics": confidence.semantics,
+                    "independent_bucket_count": confidence.independent_bucket_count,
+                    "bucket_score": confidence.bucket_score,
+                    "directional_trend_score": confidence.directional_trend_score,
+                    "trend_evidence_status": confidence.trend_evidence_status,
+                },
             })
 
         # 卖出条件
@@ -332,6 +396,12 @@ def generate_composite_signals(df: pd.DataFrame, analysis: Dict,
         n_buckets_s, hit_s = aggregate_buckets(sell_confs, SELL_SIGNAL_BUCKETS)
         if n_buckets_s >= 2:
             strength = "强" if n_buckets_s >= 3 else "中"
+            confidence = score_signal_evidence(
+                independent_bucket_count=n_buckets_s,
+                trend_strength=online_trend_strength(df, i),
+                direction="sell",
+                trend_evidence_available=i >= 60,
+            )
             sell_signals.append({
                 "bar_index": i,
                 "date": str(df.index[i].date()) if hasattr(df.index[i], "date") else str(df.index[i]),
@@ -339,9 +409,18 @@ def generate_composite_signals(df: pd.DataFrame, analysis: Dict,
                 "close": float(df["Close"].iloc[i]),
                 "type": "sell",
                 "strength": strength,
+                "confidence_level": signal_evidence_level(confidence.score),
                 "confirmations": sell_confs,
                 "buckets": hit_s,
-                "confidence": min(95, 30 + n_buckets_s * 14),
+                "confidence": confidence.score,
+                "confidence_components": {
+                    "version": confidence.version,
+                    "semantics": confidence.semantics,
+                    "independent_bucket_count": confidence.independent_bucket_count,
+                    "bucket_score": confidence.bucket_score,
+                    "directional_trend_score": confidence.directional_trend_score,
+                    "trend_evidence_status": confidence.trend_evidence_status,
+                },
             })
 
     # 当前K线信号判断
@@ -485,7 +564,8 @@ def classify_position(df: pd.DataFrame, sr_levels: Dict,
     rsi_prev = float(df["RSI"].iloc[-2]) if "RSI" in df.columns and len(df) >= 2 else rsi
 
     vol = float(c.get("Volume", 0))
-    vol_ma5 = float(df["Vol_MA5"].iloc[-1]) if "Vol_MA5" in df.columns else vol
+    volume_ma5 = _volume_ma5_column(df)
+    vol_ma5 = float(df[volume_ma5].iloc[-1]) if volume_ma5 is not None else vol
     vol_ratio = vol / vol_ma5 if vol_ma5 > 0 else 1.0
 
     ema8 = float(df["EMA_8"].iloc[-1]) if "EMA_8" in df.columns else close

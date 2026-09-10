@@ -1,1 +1,0 @@
-"""decision_output plugin"""

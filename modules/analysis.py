@@ -876,12 +876,22 @@ def calculate_trend_strength(ema_info: dict, macd_info: dict, kdj_info: dict, bb
 
     # 背离检测评分 (±8分；v3 新增)
     if divergence_info is not None:
-        bull_div = divergence_info.get("bullish_regular", [])
-        bear_div = divergence_info.get("bearish_regular", [])
-        # 只关注最近的背离（end_idx 在最近 10 根 K 线内）
-        data_len = len(df) if df is not None else 0
-        recent_bull = [d for d in bull_div if data_len - d.get("end_idx", 0) <= 10]
-        recent_bear = [d for d in bear_div if data_len - d.get("end_idx", 0) <= 10]
+        # divergence_detector returns `active_divergences` with a `type_en`
+        # discriminator. Retain compatibility with the older grouped shape.
+        active = divergence_info.get("active_divergences")
+        if active is not None:
+            recent_bull = [
+                d for d in active if d.get("type_en") == "bullish_regular"
+            ]
+            recent_bear = [
+                d for d in active if d.get("type_en") == "bearish_regular"
+            ]
+        else:
+            bull_div = divergence_info.get("bullish_regular", [])
+            bear_div = divergence_info.get("bearish_regular", [])
+            data_len = len(df) if df is not None else 0
+            recent_bull = [d for d in bull_div if data_len - d.get("end_idx", 0) <= 10]
+            recent_bear = [d for d in bear_div if data_len - d.get("end_idx", 0) <= 10]
         if recent_bull:
             score += 8
             signals.append("近期底背离（看涨）")
@@ -1495,9 +1505,68 @@ def get_short_term_trend(df: pd.DataFrame) -> dict:
 
 # ─── 完整分析入口 ──────────────────────────────────────────────────────────────
 
+
+def _build_multi_timeframe_context(df: pd.DataFrame, timeframe: str) -> dict:
+    """Build the multi-timeframe context before trend scoring."""
+    if timeframe != "日线" or df is None or len(df) <= 55:
+        return {}
+    from .multi_timeframe import analyze_timeframe_trend, build_multi_timeframe_summary
+
+    analyses = {"日线": analyze_timeframe_trend(df)}
+    for tf_name, rule in (("周线", "W"), ("月线", "ME")):
+        try:
+            tf_df = df.resample(rule).agg({
+                "Open": "first", "High": "max", "Low": "min",
+                "Close": "last", "Volume": "sum",
+            }).dropna()
+            analyses[tf_name] = (
+                analyze_timeframe_trend(tf_df)
+                if len(tf_df) >= 20
+                else {"trend": "数据不足", "strength": 0}
+            )
+        except Exception as exc:
+            analyses[tf_name] = {
+                "trend": "获取失败",
+                "strength": 0,
+                "warning": type(exc).__name__,
+            }
+    summary = build_multi_timeframe_summary(analyses)
+    alignment = str(summary.get("alignment") or "")
+    if alignment == "强多头共振":
+        mtf_score = 2
+    elif "多头" in alignment or "偏多" in alignment:
+        mtf_score = 1
+    elif alignment == "强空头共振":
+        mtf_score = -2
+    elif "空头" in alignment or "偏空" in alignment:
+        mtf_score = -1
+    else:
+        mtf_score = 0
+    return {**summary, "mtf_score": mtf_score}
+
+
+def _build_divergence_context(df: pd.DataFrame) -> dict:
+    """Run the canonical divergence detector before trend scoring."""
+    try:
+        from .divergence_detector import detect_divergences
+
+        return detect_divergences(df)
+    except Exception as exc:
+        return {
+            "divergences": [],
+            "active_divergences": [],
+            "divergence_count": 0,
+            "has_bearish_divergence": False,
+            "has_bullish_divergence": False,
+            "strongest_divergence": None,
+            "warning": type(exc).__name__,
+        }
+
 def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
                       benchmark_df: pd.DataFrame = None,
-                      with_northbound: bool = False) -> dict:
+                      with_northbound: bool = False, *,
+                      with_news: bool = True,
+                      with_intraday_elliott: bool = True) -> dict:
     """
     完整分析入口
     df: 已计算指标的 OHLCV DataFrame
@@ -1505,6 +1574,8 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
     timeframe: 时间框架（日线/周线/月线/小时线）
     benchmark_df: 基准指数（沪深 300 等）OHLCV，用于趋势分的"相对强度"维度
     with_northbound: 是否启用北向资金加成（每次会多 1 次 akshare 调用，~1-2s）
+    with_news: 是否启用 legacy 新闻/公告/资金流联网分析
+    with_intraday_elliott: 是否为日线 Elliott 分析额外联网获取 60 分钟数据
     """
     df = calc_emas(df)
 
@@ -1521,6 +1592,12 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
     vol_info = get_volume_analysis(df)
     mf_info = get_money_flow_analysis(df)
     resonance_info = get_indicator_resonance(df)
+
+    # These dimensions must be calculated before trend strength. Previously
+    # they were attached only after scoring, so advertised MTF/divergence
+    # dimensions never affected the actual score.
+    mtf_summary = _build_multi_timeframe_context(df, timeframe)
+    divergence_summary = _build_divergence_context(df)
 
     pe = info.get("trailingPE")
     valuation_info = get_valuation_position(pe)
@@ -1546,6 +1623,8 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
     strength_info = calculate_trend_strength(
         ema_info, macd_info, kdj_info, bb_info,
         df=df, benchmark_df=benchmark_df, northbound_score=nb_score,
+        mtf_info=mtf_summary or None,
+        divergence_info=divergence_summary or None,
     )
 
     result = {
@@ -1564,8 +1643,12 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
         **vol_info,
         **mf_info,
         **resonance_info,
+        "multi_timeframe_summary": mtf_summary,
+        "divergences": divergence_summary.get("divergences", []),
+        "divergence_summary": divergence_summary,
         "rsi_last": rsi_last,
         "timeframe": timeframe,
+        "score_semantics": "evidence_score_not_probability",
     }
 
     # 如果是小时线，添加短线趋势分析
@@ -1573,40 +1656,29 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
         short_term_info = get_short_term_trend(df)
         result.update(short_term_info)
 
-    # 多周期趋势共振（纳入评分体系）
-    try:
-        if timeframe == "日线" and df is not None and len(df) > 55:
-            from .multi_timeframe import analyze_timeframe_trend, build_multi_timeframe_summary
-            mtf_analyses = {"日线": analyze_timeframe_trend(df)}
-            # 周线/月线通过resample获取（避免额外API调用）
-            for tf_name, rule in [("周线", "W"), ("月线", "ME")]:
-                try:
-                    tf_df = df.resample(rule).agg({
-                        "Open": "first", "High": "max", "Low": "min",
-                        "Close": "last", "Volume": "sum"
-                    }).dropna()
-                    if len(tf_df) >= 20:
-                        mtf_analyses[tf_name] = analyze_timeframe_trend(tf_df)
-                    else:
-                        mtf_analyses[tf_name] = {"trend": "数据不足", "strength": 0}
-                except Exception:
-                    mtf_analyses[tf_name] = {"trend": "获取失败", "strength": 0}
-            result["multi_timeframe_summary"] = build_multi_timeframe_summary(mtf_analyses)
-    except Exception:
-        pass
-
-    # ── 消息面情绪集成（在评分前获取，供 interpret_all_indicators 使用）──
-    try:
-        from .news_analysis import NewsAnalyzer
-        _ticker = info.get("symbol", "") if info else ""
-        news_analyzer = NewsAnalyzer(_ticker, info.get("shortName", "") if info else "")
-        news_result = news_analyzer.get_comprehensive_news_analysis()
-        result["news_sentiment"] = news_result
-        # 资金流向单独存储供 interpret_fund_flow 使用
-        fund_flow = news_result.get("资金流向", {})
-        if fund_flow:
-            result["fund_flow"] = fund_flow
-    except Exception:
+    # ── 消息面情绪集成（带超时：新闻/千股千评走东财，慢或挂时最多等 8 秒即跳过，避免阻塞主分析）──
+    if with_news:
+        try:
+            from .news_analysis import NewsAnalyzer
+            import concurrent.futures
+            _ticker = info.get("symbol", "") if info else ""
+            news_analyzer = NewsAnalyzer(_ticker, info.get("shortName", "") if info else "")
+            _ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            _fut = _ex.submit(news_analyzer.get_comprehensive_news_analysis)
+            try:
+                news_result = _fut.result(timeout=8)
+                result["news_sentiment"] = news_result
+                # 资金流向单独存储供 interpret_fund_flow 使用
+                fund_flow = news_result.get("资金流向", {})
+                if fund_flow:
+                    result["fund_flow"] = fund_flow
+            except concurrent.futures.TimeoutError:
+                result["news_sentiment"] = None   # 新闻超时，跳过，不影响主分析
+            finally:
+                _ex.shutdown(wait=False)          # 不等待挂起线程，避免阻塞
+        except Exception:
+            result["news_sentiment"] = None
+    else:
         result["news_sentiment"] = None
 
     # 指标详细解释与多因子概率评分 (v2)
@@ -1643,13 +1715,16 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
         sr_for_plan = result.get("multi_tf_sr", {}).get("daily", {})
         _board = "其他"
         _mcap = None
+        _spot = None
         if info:
             _mcap = info.get("marketCap")
             if _mcap:
                 _mcap = _mcap / 1e8  # 转为亿
+            # 实时现价（与看板“最新价”同源）；用于“如果现在买入”的价位，避免用昨日日线收盘
+            _spot = info.get("currentPrice") or info.get("regularMarketPrice")
         action_plan = generate_buy_action_plan(
             df, result, sr_for_plan, comp_sig, trade_sug,
-            board=_board, market_cap_yi=_mcap,
+            board=_board, market_cap_yi=_mcap, current_price=_spot,
         )
         result["buy_action_plan"] = action_plan
     except Exception:
@@ -1667,15 +1742,7 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
         result["candlestick_patterns"] = []
         result["candlestick_summary"] = {}
 
-    # 背离检测
-    try:
-        from .divergence_detector import detect_divergences
-        div_info = detect_divergences(df)
-        result["divergences"] = div_info.get("divergences", [])
-        result["divergence_summary"] = div_info
-    except Exception:
-        result["divergences"] = []
-        result["divergence_summary"] = {}
+    # 背离已在趋势评分前由 _build_divergence_context 统一计算。
 
     # 量价深度分析
     try:
@@ -1709,18 +1776,44 @@ def run_full_analysis(df: pd.DataFrame, info: dict, timeframe: str = "日线",
                 "Close": "last", "Volume": "sum",
             }).dropna()
             df_60m = None
-            try:
-                from .intraday_analysis import fetch_intraday_data
-                _ticker = info.get("symbol", "") if info else ""
-                if _ticker:
-                    df_60m = fetch_intraday_data(_ticker, period="1mo", interval="60m")
-            except Exception:
-                pass
+            if with_intraday_elliott:
+                try:
+                    from .intraday_analysis import fetch_intraday_data
+                    _ticker = info.get("symbol", "") if info else ""
+                    if _ticker:
+                        df_60m = fetch_intraday_data(_ticker, period="1mo", interval="60m")
+                except Exception:
+                    pass
             mtf_ew = detect_multi_timeframe_waves(df, df_weekly, df_60m)
             result["elliott_wave_multi_tf"] = mtf_ew
     except Exception:
         result["elliott_wave_summary"] = {}
         result["elliott_wave_multi_tf"] = {}
+
+    # ── ①精确交易建议：汇合 江恩 + 艾略特 + 经典 支撑压力，在支撑位博弈盈亏比 ──
+    try:
+        from .gann import compute_gann
+        from .sr_confluence import aggregate_sr, build_trade_plan
+        _cp = None
+        if info:
+            _cp = info.get("currentPrice") or info.get("regularMarketPrice")
+        if not _cp:
+            _cp = float(df["Close"].iloc[-1])
+        _cp = float(_cp)
+        _atr = None
+        if len(df) >= 14:
+            _tr = pd.concat([df["High"] - df["Low"],
+                             (df["High"] - df["Close"].shift(1)).abs(),
+                             (df["Low"] - df["Close"].shift(1)).abs()], axis=1).max(axis=1)
+            _atr = float(_tr.tail(14).mean())
+        _gann = compute_gann(df)
+        _agg = aggregate_sr(_cp, sr_levels_dict=result.get("multi_tf_sr", {}).get("daily", {}),
+                            gann_result=_gann, ew_result=result.get("elliott_wave_summary"))
+        result["gann"] = _gann
+        result["sr_confluence"] = _agg
+        result["trade_plan"] = build_trade_plan(_cp, _agg, atr=_atr)
+    except Exception:
+        result["trade_plan"] = None
 
     # 风险量化（按市场自动选无风险利率：A 股 2.2% / 美股 4.3% / 港股 4.0%）
     try:

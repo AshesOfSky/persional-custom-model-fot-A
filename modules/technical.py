@@ -567,6 +567,7 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = calc_atr(df)
     df = calc_vwap(df)
     df = calc_obv(df)
+    df = calc_smart_obv(df)
     df = calc_volume_ma(df)
     df = calc_cci(df)
     df = calc_wr(df)
@@ -597,6 +598,7 @@ class IndicatorConfig:
         self.show_ichimoku = False
         self.show_td_sequential = False
         self.show_elliott_wave = False
+        self.show_gann = False       # 江恩理论叠加：八分位/甘氏扇角度线/时空周期
 
         # K线类型: "candle" | "heikin_ashi"
         self.chart_type = "candle"
@@ -618,6 +620,7 @@ class IndicatorConfig:
             "show_ichimoku": self.show_ichimoku,
             "show_td_sequential": self.show_td_sequential,
             "show_elliott_wave": self.show_elliott_wave,
+            "show_gann": self.show_gann,
             "chart_type": self.chart_type,
             "secondary_1": self.secondary_indicator_1,
             "secondary_2": self.secondary_indicator_2,
@@ -955,6 +958,50 @@ def build_chart(df: pd.DataFrame, ticker: str = "", period: str = "",
                 )
         except Exception as _ew_err:
             pass  # 波浪检测失败时静默跳过
+
+    # ── 江恩理论：八分位 + 甘氏扇角度线 + 时空周期（主图叠加）────────────────
+    if getattr(config, "show_gann", False):
+        try:
+            from .gann import compute_gann
+            g = compute_gann(df)
+            if g:
+                _lo = float(df["Low"].min()) * 0.92
+                _hi = float(df["High"].max()) * 1.08
+                # 八分位：强区青色实线，弱区淡绿虚线
+                for o in g.get("octaves", []):
+                    _s = o.get("strong")
+                    fig.add_shape(type="line", x0=df.index[0], x1=df.index[-1],
+                                  y0=o["price"], y1=o["price"],
+                                  line=dict(color="#00BCD4" if _s else "#3E6B5A",
+                                            width=1.2 if _s else 0.6,
+                                            dash="solid" if _s else "dot"),
+                                  row=1, col=1)
+                    fig.add_annotation(x=df.index[-1], y=o["price"],
+                                       text=f"  {o['label']} {o['price']:.2f}", showarrow=False,
+                                       font=dict(color="#00BCD4" if _s else "#6FA58C", size=8),
+                                       xanchor="left", row=1, col=1)
+                # 甘氏扇：关键角度线，裁剪到价格区间（避免拉扁坐标）
+                _pos = g.get("pivot", {}).get("pos", 0)
+                _fan = g.get("fan_series", {})
+                for _nm, _cl in (("1x1", "#FFC107"), ("1x2", "#FF9800"), ("2x1", "#FF9800"),
+                                 ("1x4", "#8D6E63"), ("4x1", "#8D6E63")):
+                    _ser = _fan.get(_nm)
+                    if not _ser:
+                        continue
+                    _ys = [(_v if (_v is not None and _lo <= _v <= _hi) else None) for _v in _ser[_pos:]]
+                    fig.add_trace(go.Scatter(x=df.index[_pos:], y=_ys, mode="lines",
+                                             line=dict(color=_cl, width=1, dash="dashdot"),
+                                             name=f"江恩{_nm}", opacity=0.55, showlegend=False,
+                                             connectgaps=False), row=1, col=1)
+                # 时空周期：区间内竖线（潜在变盘时间）
+                for _cyc in g.get("time_cycles", []):
+                    if _cyc.get("date") and 0 <= _cyc["pos"] < len(df):
+                        fig.add_vline(x=df.index[_cyc["pos"]], line_dash="dot",
+                                      line_color="#9C27B0", line_width=0.8, opacity=0.5,
+                                      annotation_text=f"江恩{_cyc['cycle']}", annotation_font_size=8,
+                                      annotation_font_color="#9C27B0", row=1, col=1)
+        except Exception:
+            pass  # 江恩计算失败时静默跳过
 
     # ── 斐波那契回撤线 ────────────────────────────────────────────────────
     if config.show_fibonacci:
@@ -1486,3 +1533,83 @@ def annotate_sr_bands(fig: go.Figure, sr_levels: dict, current_price: float) -> 
         )
 
     return fig
+
+
+
+# ======================================================================
+# v4 P1-04: Smart OBV (On-Balance Volume) with divergence detection
+# ======================================================================
+
+def calc_smart_obv(df: "pd.DataFrame", ma_period: int = 20) -> "pd.DataFrame":
+    """
+    Enhanced OBV with:
+      - OBV column
+      - OBV_MA (smoothed)
+      - OBV_Divergence: +1 bullish div, -1 bearish div, 0 none
+      - OBV_Regime: 'accumulation' / 'distribution' / 'neutral'
+    """
+    close_col = "Close" if "Close" in df.columns else ("close" if "close" in df.columns else None)
+    vol_col = "Volume" if "Volume" in df.columns else ("volume" if "volume" in df.columns else None)
+    if close_col is None or vol_col is None:
+        return df
+
+    close = df[close_col].values.astype(float)
+    volume = df[vol_col].values.astype(float)
+    n = len(close)
+
+    obv = np.zeros(n)
+    for i in range(1, n):
+        if close[i] > close[i - 1]:
+            obv[i] = obv[i - 1] + volume[i]
+        elif close[i] < close[i - 1]:
+            obv[i] = obv[i - 1] - volume[i]
+        else:
+            obv[i] = obv[i - 1]
+
+    df["OBV"] = obv
+    df["OBV_MA"] = pd.Series(obv).rolling(ma_period, min_periods=1).mean().values
+
+    # Divergence detection (20-bar lookback)
+    div_arr = np.zeros(n, dtype=int)
+    lookback = 20
+    for i in range(lookback, n):
+        price_window = close[i - lookback:i + 1]
+        obv_window = obv[i - lookback:i + 1]
+
+        price_at_start = price_window[0]
+        price_at_end = price_window[-1]
+        obv_at_start = obv_window[0]
+        obv_at_end = obv_window[-1]
+
+        price_min = np.min(price_window)
+        obv_min = np.min(obv_window)
+
+        # Bullish divergence: price makes new low but OBV does not
+        if (price_at_end <= price_min * 1.005 and
+                obv_at_end > obv_min * 1.05):
+            div_arr[i] = 1
+
+        price_max = np.max(price_window)
+        obv_max = np.max(obv_window)
+
+        # Bearish divergence: price makes new high but OBV does not
+        if (price_at_end >= price_max * 0.995 and
+                obv_at_end < obv_max * 0.95):
+            div_arr[i] = -1
+
+    df["OBV_Divergence"] = div_arr
+
+    # Regime classification
+    regime = []
+    for i in range(n):
+        if i < ma_period:
+            regime.append("neutral")
+        elif obv[i] > df["OBV_MA"].iloc[i] * 1.02:
+            regime.append("accumulation")
+        elif obv[i] < df["OBV_MA"].iloc[i] * 0.98:
+            regime.append("distribution")
+        else:
+            regime.append("neutral")
+    df["OBV_Regime"] = regime
+
+    return df
